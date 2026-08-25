@@ -271,7 +271,7 @@
     display:flex; align-items:center; justify-content:center; font-size:11px; background:none; color:var(--ink);
   }
   .check.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
-  .todo-text{flex:1; font-size:13.5px; line-height:1.4;}
+  .todo-text{flex:1; min-width:0; font-size:13.5px; line-height:1.4; word-break:break-word;}
   .assignee-select{
     background:var(--canvas-alt); border:1px solid var(--line-strong); color:var(--ink-dim);
     border-radius:7px; padding:5px 8px; font-size:11.5px; max-width:120px;
@@ -539,11 +539,16 @@ function roomToArrays(data) {
 function startListening(code) {
   if (roomListener) roomListener.close();
   roomListener = fb.listen(`rooms/${code}`, (event) => {
-    // On any change, re-fetch the full room for simplicity
     fb.get(`rooms/${code}`).then(data => {
       if (data) {
+        const ta = document.getElementById('composer-input');
+        const draft = ta ? ta.value : '';
         room = roomToArrays(data);
         render();
+        if (draft && composerOpenFor) {
+          const ta2 = document.getElementById('composer-input');
+          if (ta2) ta2.value = draft;
+        }
       }
     }).catch(() => { });
   });
@@ -1467,6 +1472,7 @@ document.addEventListener('click', async (e) => {
       if (!text) { composerOpenFor = null; render(); return; }
       composerOpenFor = null;
       await addNote(colId, text);
+      render();
       break;
     }
 
