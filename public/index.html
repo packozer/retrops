@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Postits — Rétrospectives d'équipe</title>
+<title>Rétrops — Rétrospectives d'équipe</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Manrope:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -48,8 +48,20 @@
   .hand{font-family:'Kalam',cursive;}
   .mono{font-family:'JetBrains Mono',monospace;}
 
-  /* ---------- layout shells ---------- */
+  /* ---------- layout ---------- */
   #app{min-height:100vh; display:flex; flex-direction:column;}
+
+  /* ---------- LOADING OVERLAY ---------- */
+  .loading-overlay{
+    position:fixed; inset:0; background:rgba(23,33,28,0.85);
+    display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .spinner{
+    width:40px; height:40px; border:3px solid var(--line-strong);
+    border-top-color:var(--accent); border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ---------- HOME ---------- */
   .home{
@@ -61,7 +73,6 @@
     font-family:'Kalam',cursive; font-weight:700; font-size:44px;
     letter-spacing:0.5px; margin:0 0 6px;
     transform:rotate(-1.5deg); display:inline-block;
-    position:relative;
   }
   .home-hero .brand .dot{color:var(--accent);}
   .home-hero p{color:var(--ink-dim); font-size:15px; line-height:1.6; margin:0;}
@@ -108,7 +119,7 @@
   .btn-ghost:hover{border-color:var(--ink-faint);}
   .btn-sm{padding:7px 12px; font-size:12.5px; border-radius:8px;}
   .btn-block{width:100%;}
-  .hint-error{color:var(--danger); font-size:12.5px; min-height:16px;}
+  .hint-error{color:var(--danger); font-size:12.5px; min-height:16px; margin-top:4px;}
 
   /* ---------- BOARD SHELL ---------- */
   .board-view{flex:1; display:flex; flex-direction:column; height:100vh;}
@@ -162,10 +173,11 @@
   }
   .column{
     min-width:280px; max-width:280px; display:flex; flex-direction:column;
-    background:rgba(0,0,0,0.12); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    background:rgba(0,0,0,0.12); border:1px solid var(--line); border-radius:14px; overflow:visible;
   }
   .column-head{
     padding:12px 14px 10px; border-bottom:2px dashed var(--line-strong); position:relative;
+    border-radius:14px 14px 0 0; background:rgba(0,0,0,0.08);
   }
   .column-head .tape{
     position:absolute; top:-1px; left:16px; width:44px; height:12px; border-radius:2px; opacity:0.9;
@@ -206,8 +218,8 @@
   }
   .note-menu{position:relative;}
   .note-menu .pop{
-    display:none; position:absolute; bottom:26px; right:0; background:#241a08; color:#F4F1E8;
-    border-radius:10px; padding:6px; min-width:170px; z-index:40; box-shadow:0 8px 20px rgba(0,0,0,0.4);
+    display:none; position:absolute; top:28px; right:0; background:#241a08; color:#F4F1E8;
+    border-radius:10px; padding:6px; min-width:170px; z-index:50; box-shadow:0 8px 20px rgba(0,0,0,0.4);
     font-family:'Manrope',sans-serif;
   }
   .note-menu.open .pop{display:block;}
@@ -284,7 +296,6 @@
     border-radius:10px; padding:12px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.6; resize:vertical;
   }
   .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:14px;}
-  .close-x{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--ink-faint); font-size:18px;}
 
   @media (max-width:640px){
     .home-cards{flex-direction:column; align-items:stretch;}
@@ -300,247 +311,364 @@
 <div id="toast" class="toast"></div>
 
 <script>
+/* ============================= FIREBASE REST API ============================= */
+
+const FB_URL = "https://retrops-ddec0-default-rtdb.europe-west1.firebasedatabase.app";
+
+const fb = {
+  async get(path) {
+    const res = await fetch(`${FB_URL}/${path}.json`);
+    if (!res.ok) throw new Error(`Firebase GET ${path}: ${res.status}`);
+    return res.json(); // returns null if not found
+  },
+  async set(path, data) {
+    const res = await fetch(`${FB_URL}/${path}.json`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`Firebase SET ${path}: ${res.status}`);
+    return res.json();
+  },
+  async update(path, data) {
+    const res = await fetch(`${FB_URL}/${path}.json`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`Firebase PATCH ${path}: ${res.status}`);
+    return res.json();
+  },
+  async remove(path) {
+    const res = await fetch(`${FB_URL}/${path}.json`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Firebase DELETE ${path}: ${res.status}`);
+  },
+  // SSE listener for real-time updates
+  listen(path, callback) {
+    const es = new EventSource(`${FB_URL}/${path}.json`);
+    es.addEventListener("put", (e) => {
+      const data = JSON.parse(e.data);
+      callback(data);
+    });
+    es.addEventListener("patch", (e) => {
+      const data = JSON.parse(e.data);
+      callback(data);
+    });
+    es.onerror = () => {
+      // EventSource auto-reconnects
+    };
+    return es; // caller can close with es.close()
+  }
+};
+
 /* ============================= CONFIG / DATA ============================= */
 
 const THEMES = {
   sstop: {
-    name:"Start / Stop / Continue",
-    desc:"Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
-    columns:[
-      {id:"start", label:"Start", icon:"🌱", tape:"var(--tape-4)"},
-      {id:"stop", label:"Stop", icon:"🛑", tape:"var(--tape-3)"},
-      {id:"continue", label:"Continue", icon:"🔁", tape:"var(--tape-2)"}
+    name: "Start / Stop / Continue",
+    desc: "Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
+    columns: [
+      { id: "start", label: "Start", icon: "🌱", tape: "var(--tape-4)" },
+      { id: "stop", label: "Stop", icon: "🛑", tape: "var(--tape-3)" },
+      { id: "continue", label: "Continue", icon: "🔁", tape: "var(--tape-2)" }
     ]
   },
   msg: {
-    name:"Mad / Sad / Glad",
-    desc:"L'humeur de l'équipe depuis le dernier sprint.",
-    columns:[
-      {id:"mad", label:"Mad", icon:"😠", tape:"var(--tape-3)"},
-      {id:"sad", label:"Sad", icon:"😢", tape:"var(--tape-2)"},
-      {id:"glad", label:"Glad", icon:"😊", tape:"var(--tape-4)"}
+    name: "Mad / Sad / Glad",
+    desc: "L'humeur de l'équipe depuis le dernier sprint.",
+    columns: [
+      { id: "mad", label: "Mad", icon: "😠", tape: "var(--tape-3)" },
+      { id: "sad", label: "Sad", icon: "😢", tape: "var(--tape-2)" },
+      { id: "glad", label: "Glad", icon: "😊", tape: "var(--tape-4)" }
     ]
   },
   fourls: {
-    name:"4 L's",
-    desc:"Liked, Learned, Lacked, Longed for.",
-    columns:[
-      {id:"liked", label:"Liked", icon:"💛", tape:"var(--tape-1)"},
-      {id:"learned", label:"Learned", icon:"📚", tape:"var(--tape-2)"},
-      {id:"lacked", label:"Lacked", icon:"🕳️", tape:"var(--tape-3)"},
-      {id:"longed", label:"Longed for", icon:"✨", tape:"var(--tape-5)"}
+    name: "4 L's",
+    desc: "Liked, Learned, Lacked, Longed for.",
+    columns: [
+      { id: "liked", label: "Liked", icon: "💛", tape: "var(--tape-1)" },
+      { id: "learned", label: "Learned", icon: "📚", tape: "var(--tape-2)" },
+      { id: "lacked", label: "Lacked", icon: "🕳️", tape: "var(--tape-3)" },
+      { id: "longed", label: "Longed for", icon: "✨", tape: "var(--tape-5)" }
     ]
   },
   sailboat: {
-    name:"Sailboat",
-    desc:"Vent, ancre, rochers et l'île à atteindre.",
-    columns:[
-      {id:"wind", label:"Vent", icon:"⛵", tape:"var(--tape-2)"},
-      {id:"anchor", label:"Ancre", icon:"⚓", tape:"var(--tape-3)"},
-      {id:"rocks", label:"Rochers", icon:"🪨", tape:"var(--tape-1)"},
-      {id:"island", label:"Île", icon:"🏝️", tape:"var(--tape-4)"}
+    name: "Sailboat",
+    desc: "Vent, ancre, rochers et l'île à atteindre.",
+    columns: [
+      { id: "wind", label: "Vent", icon: "⛵", tape: "var(--tape-2)" },
+      { id: "anchor", label: "Ancre", icon: "⚓", tape: "var(--tape-3)" },
+      { id: "rocks", label: "Rochers", icon: "🪨", tape: "var(--tape-1)" },
+      { id: "island", label: "Île", icon: "🏝️", tape: "var(--tape-4)" }
     ]
   }
 };
 
-const NOTE_COLORS = ["note-1","note-2","note-3","note-4","note-5","note-6"];
+const NOTE_COLORS = ["note-1", "note-2", "note-3", "note-4", "note-5", "note-6"];
 
 /* ============================= UTIL ============================= */
 
-function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
-function slugify(s){ return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "user"; }
-function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = (h<<5)-h + s.charCodeAt(i); h|=0; } return Math.abs(h); }
-function colorForName(name){ return NOTE_COLORS[hashStr(name) % NOTE_COLORS.length]; }
-function rotForId(id){ return (hashStr(id) % 7) - 3; } // -3..3 deg
-function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-function makeCode(){
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function slugify(s) { return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "user"; }
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; } return Math.abs(h); }
+function colorForName(name) { return NOTE_COLORS[hashStr(name) % NOTE_COLORS.length]; }
+function rotForId(id) { return (hashStr(id) % 7) - 3; }
+function escapeHtml(s) { return (s || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function makeCode() {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let c=""; for(let i=0;i<5;i++) c += chars[Math.floor(Math.random()*chars.length)];
+  let c = ""; for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
   return c;
 }
-function showToast(msg){
+function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(showToast._h);
-  showToast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+  showToast._h = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 /* ============================= APP STATE ============================= */
 
-let view = "home"; // home | board
-let homeMode = "create"; // create | join
-let myName = "";
+let view = "home";
+let myName = localStorage.getItem('retrops_name') || "";
 let myColor = "note-1";
 let selectedTheme = "sstop";
 let roomCode = null;
-let room = null; // synced room object
-let activeTab = "board"; // board | actions
-let presenceList = []; // [{name,color,ts}]
+let room = null;
+let activeTab = "board";
+let presenceList = [];
 let pollTimer = null;
 let heartbeatTimer = null;
 let clockTimer = null;
-let openMenus = {}; // noteId -> bool, 'timer' -> bool
-let composerOpenFor = null; // columnId currently showing inline composer
+let openMenus = {};
+let composerOpenFor = null;
+let roomListener = null; // SSE EventSource
+let loading = false;
 
-/* ---------- profile persistence (personal, not shared) ---------- */
-async function loadProfile(){
-  try{
-    const r = await window.storage.get('my-profile', false);
-    if(r && r.value){
-      const p = JSON.parse(r.value);
-      myName = p.name || "";
-    }
-  }catch(e){ /* no profile yet */ }
-}
-async function saveProfile(){
-  try{ await window.storage.set('my-profile', JSON.stringify({name:myName}), false); }catch(e){}
-}
+/* ============================= FIREBASE SYNC ============================= */
 
-/* ============================= STORAGE SYNC ============================= */
-
-async function createRoom(theme){
+async function createRoom(theme) {
   const code = makeCode();
-  const cols = THEMES[theme].columns;
   const initial = {
     theme,
     createdAt: Date.now(),
-    notes: [],
-    todos: [],
+    notes: {},
+    todos: {},
     timerEndsAt: null
   };
-  await window.storage.set('room:'+code, JSON.stringify(initial), true);
+  await fb.set(`rooms/${code}`, initial);
   return code;
 }
 
-async function fetchRoom(code){
-  const r = await window.storage.get('room:'+code, true);
-  if(!r || !r.value) return null;
-  return JSON.parse(r.value);
+async function fetchRoom(code) {
+  const data = await fb.get(`rooms/${code}`);
+  return data;
 }
 
-async function updateRoom(mutator){
-  // read-modify-write against the freshest copy to minimize collision window
-  let fresh = await fetchRoom(roomCode);
-  if(!fresh) fresh = room;
-  const next = mutator(JSON.parse(JSON.stringify(fresh)));
-  await window.storage.set('room:'+roomCode, JSON.stringify(next), true);
-  room = next;
-  render();
-  return next;
+function roomToArrays(data) {
+  // Firebase stores objects, we need arrays for rendering
+  if (!data) return null;
+  return {
+    ...data,
+    notes: data.notes ? Object.values(data.notes) : [],
+    todos: data.todos ? Object.values(data.todos) : []
+  };
 }
 
-async function pollRoom(){
-  try{
-    const fresh = await fetchRoom(roomCode);
-    if(fresh){ room = fresh; render(); }
-  }catch(e){ /* ignore transient errors */ }
+function startListening(code) {
+  if (roomListener) roomListener.close();
+  roomListener = fb.listen(`rooms/${code}`, (event) => {
+    // On any change, re-fetch the full room for simplicity
+    fb.get(`rooms/${code}`).then(data => {
+      if (data) {
+        room = roomToArrays(data);
+        render();
+      }
+    }).catch(() => { });
+  });
 }
 
-async function sendHeartbeat(){
-  try{
+async function sendHeartbeat() {
+  try {
     const slug = slugify(myName);
-    await window.storage.set('presence:'+roomCode+':'+slug, JSON.stringify({name:myName,color:myColor,ts:Date.now()}), true);
-  }catch(e){}
+    await fb.set(`presence/${roomCode}/${slug}`, {
+      name: myName,
+      color: myColor,
+      ts: Date.now()
+    });
+  } catch (e) { }
 }
-async function pollPresence(){
-  try{
-    const listRes = await window.storage.list('presence:'+roomCode+':', true);
-    if(!listRes || !listRes.keys) return;
+
+async function pollPresence() {
+  try {
+    const data = await fb.get(`presence/${roomCode}`);
+    if (!data) { presenceList = []; return; }
     const now = Date.now();
-    const results = await Promise.all(listRes.keys.map(async k=>{
-      try{ const r = await window.storage.get(k, true); return r ? JSON.parse(r.value) : null; }catch(e){ return null; }
-    }));
-    presenceList = results.filter(p => p && (now - p.ts) < 25000);
+    presenceList = Object.values(data).filter(p => p && (now - p.ts) < 25000);
     renderPresenceOnly();
-  }catch(e){}
+  } catch (e) { }
+}
+
+/* ============================= ROOM MUTATIONS ============================= */
+
+async function addNote(columnId, text) {
+  const id = uid();
+  const note = {
+    id, text, author: myName, color: colorForName(myName),
+    columnId, order: Date.now(), votes: []
+  };
+  await fb.set(`rooms/${roomCode}/notes/${id}`, note);
+}
+
+async function deleteNote(id) {
+  await fb.remove(`rooms/${roomCode}/notes/${id}`);
+}
+
+async function moveNote(id, newCol) {
+  await fb.update(`rooms/${roomCode}/notes/${id}`, { columnId: newCol, order: Date.now() });
+}
+
+async function toggleVote(id) {
+  // Read current votes, toggle, write back
+  const note = await fb.get(`rooms/${roomCode}/notes/${id}`);
+  if (!note) return;
+  let votes = note.votes || [];
+  // Firebase may store as object if sparse — normalize
+  if (!Array.isArray(votes)) votes = Object.values(votes);
+  const idx = votes.indexOf(myName);
+  if (idx >= 0) votes.splice(idx, 1); else votes.push(myName);
+  await fb.set(`rooms/${roomCode}/notes/${id}/votes`, votes);
+}
+
+async function addTodo(text) {
+  const id = uid();
+  await fb.set(`rooms/${roomCode}/todos/${id}`, {
+    id, text, assignee: "", done: false, order: Date.now()
+  });
+}
+
+async function toggleTodo(id) {
+  const todo = await fb.get(`rooms/${roomCode}/todos/${id}`);
+  if (!todo) return;
+  await fb.update(`rooms/${roomCode}/todos/${id}`, { done: !todo.done });
+}
+
+async function assignTodo(id, assignee) {
+  await fb.update(`rooms/${roomCode}/todos/${id}`, { assignee });
+}
+
+async function deleteTodo(id) {
+  await fb.remove(`rooms/${roomCode}/todos/${id}`);
+}
+
+async function noteToTodo(noteId) {
+  const note = await fb.get(`rooms/${roomCode}/notes/${noteId}`);
+  if (!note) return;
+  await addTodo(note.text);
+}
+
+async function refreshRoom() {
+  const data = await fetchRoom(roomCode);
+  if (data) { room = roomToArrays(data); render(); }
+}
+
+async function setTimer(minutes) {
+  await fb.update(`rooms/${roomCode}`, { timerEndsAt: Date.now() + minutes * 60000 });
+}
+
+async function clearTimer() {
+  await fb.update(`rooms/${roomCode}`, { timerEndsAt: null });
 }
 
 /* ============================= NAVIGATION ============================= */
 
-async function enterRoom(code){
+async function enterRoom(code) {
   roomCode = code.toUpperCase();
-  const fresh = await fetchRoom(roomCode);
-  if(!fresh){ showToast("Salle introuvable — vérifie le code."); return false; }
-  room = fresh;
-  view = "board";
-  activeTab = "board";
-  await saveProfile();
-  render();
-  sendHeartbeat();
-  pollPresence();
-  if(pollTimer) clearInterval(pollTimer);
-  if(heartbeatTimer) clearInterval(heartbeatTimer);
-  if(clockTimer) clearInterval(clockTimer);
-  pollTimer = setInterval(()=>{ pollRoom(); pollPresence(); }, 3000);
-  heartbeatTimer = setInterval(sendHeartbeat, 9000);
-  clockTimer = setInterval(()=>{ if(view==='board') renderTimerOnly(); }, 1000);
-  return true;
+  loading = true; render();
+  try {
+    const data = await fetchRoom(roomCode);
+    if (!data) { loading = false; render(); showToast("Salle introuvable — vérifie le code."); return false; }
+    room = roomToArrays(data);
+    view = "board";
+    activeTab = "board";
+    localStorage.setItem('retrops_name', myName);
+    localStorage.setItem('retrops_room', roomCode);
+    loading = false;
+    render();
+    startListening(roomCode);
+    sendHeartbeat();
+    pollPresence();
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    if (pollTimer) clearInterval(pollTimer);
+    if (clockTimer) clearInterval(clockTimer);
+    heartbeatTimer = setInterval(sendHeartbeat, 9000);
+    pollTimer = setInterval(pollPresence, 5000);
+    clockTimer = setInterval(() => { if (view === 'board') renderTimerOnly(); }, 1000);
+    return true;
+  } catch (e) {
+    loading = false; render();
+    showToast("Erreur réseau — vérifie ta connexion.");
+    return false;
+  }
 }
 
-function leaveRoom(){
-  if(pollTimer) clearInterval(pollTimer);
-  if(heartbeatTimer) clearInterval(heartbeatTimer);
-  if(clockTimer) clearInterval(clockTimer);
+function leaveRoom() {
+  if (roomListener) { roomListener.close(); roomListener = null; }
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  if (pollTimer) clearInterval(pollTimer);
+  if (clockTimer) clearInterval(clockTimer);
   view = "home"; room = null; roomCode = null; presenceList = [];
+  localStorage.removeItem('retrops_room');
   render();
 }
 
 /* ============================= RENDER: HOME ============================= */
 
-function renderHome(){
+function renderHome() {
   myColor = colorForName(myName || "?");
-  const themeCards = Object.keys(THEMES).map(key=>{
+  const themeCards = Object.keys(THEMES).map(key => {
     const t = THEMES[key];
     const sel = selectedTheme === key ? "selected" : "";
-    const strips = t.columns.map(c=>`<i style="background:${c.tape}"></i>`).join("");
+    const strips = t.columns.map(c => `<i style="background:${c.tape}"></i>`).join("");
     return `<button type="button" class="theme-card ${sel}" data-action="pick-theme" data-theme="${key}">
       <div class="theme-strip">${strips}</div>
-      <div class="t-name">${t.icon||""} ${escapeHtml(t.name)}</div>
+      <div class="t-name">${escapeHtml(t.name)}</div>
       <div class="t-desc">${escapeHtml(t.desc)}</div>
     </button>`;
   }).join("");
 
-  const createTab = `
-    <div class="field">
-      <label>Ton prénom</label>
-      <input id="create-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
-    </div>
-    <div class="field">
-      <label>Choisis un template de rétro</label>
-      <div class="theme-grid">${themeCards}</div>
-    </div>
-    <button class="btn btn-primary btn-block" data-action="create-room">Créer la salle →</button>
-    <div class="hint-error" id="create-error"></div>
-  `;
-
-  const joinTab = `
-    <div class="field">
-      <label>Ton prénom</label>
-      <input id="join-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
-    </div>
-    <div class="field">
-      <label>Code de la salle</label>
-      <input id="join-code" class="code" type="text" placeholder="AB3XZ" maxlength="6">
-    </div>
-    <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
-    <div class="hint-error" id="join-error"></div>
-  `;
-
   document.getElementById('app').innerHTML = `
     <div class="home">
       <div class="home-hero">
-        <div class="brand">Post-its<span class="dot">.</span></div>
+        <div class="brand">Rétrops<span class="dot">.</span></div>
         <p>Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.</p>
       </div>
       <div class="home-cards">
         <div class="home-card">
           <h2>Créer une rétro<span>Choisis un template et lance la session</span></h2>
-          ${createTab}
+          <div class="field">
+            <label>Ton prénom</label>
+            <input id="create-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+          </div>
+          <div class="field">
+            <label>Choisis un template de rétro</label>
+            <div class="theme-grid">${themeCards}</div>
+          </div>
+          <button class="btn btn-primary btn-block" data-action="create-room">Créer la salle →</button>
+          <div class="hint-error" id="create-error"></div>
         </div>
         <div class="home-card">
           <h2>Rejoindre une rétro<span>Ton équipe t'a envoyé un code</span></h2>
-          ${joinTab}
+          <div class="field">
+            <label>Ton prénom</label>
+            <input id="join-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+          </div>
+          <div class="field">
+            <label>Code de la salle</label>
+            <input id="join-code" class="code" type="text" placeholder="AB3XZ" maxlength="6">
+          </div>
+          <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
+          <div class="hint-error" id="join-error"></div>
         </div>
       </div>
     </div>
@@ -549,57 +677,59 @@ function renderHome(){
 
 /* ============================= RENDER: BOARD ============================= */
 
-function fmtClock(ms){
-  if(ms<=0) return "00:00";
-  const s = Math.ceil(ms/1000);
-  const m = Math.floor(s/60);
-  const r = s%60;
-  return String(m).padStart(2,'0')+":"+String(r).padStart(2,'0');
+function fmtClock(ms) {
+  if (ms <= 0) return "00:00";
+  const s = Math.ceil(ms / 1000);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return String(m).padStart(2, '0') + ":" + String(r).padStart(2, '0');
 }
 
-function renderTimerOnly(){
+function renderTimerOnly() {
   const el = document.getElementById('timer-disp');
-  if(!el || !room) return;
-  if(room.timerEndsAt){
+  if (!el || !room) return;
+  if (room.timerEndsAt) {
     const remain = room.timerEndsAt - Date.now();
-    el.textContent = remain>0 ? fmtClock(remain) : "Fini";
-    el.classList.toggle('done', remain<=0);
+    el.textContent = remain > 0 ? fmtClock(remain) : "Fini";
+    el.classList.toggle('done', remain <= 0);
   } else {
     el.textContent = "--:--";
     el.classList.remove('done');
   }
 }
 
-function renderPresenceOnly(){
+function renderPresenceOnly() {
   const el = document.getElementById('presence-list');
-  if(!el) return;
+  if (!el) return;
   el.innerHTML = presenceHtml();
 }
 
-function presenceHtml(){
-  if(!presenceList.length) return "";
-  return presenceList.slice(0,8).map(p=>{
+function presenceHtml() {
+  if (!presenceList.length) return "";
+  return presenceList.slice(0, 8).map(p => {
     const cls = colorForName(p.name);
-    const initials = (p.name||"?").slice(0,2).toUpperCase();
+    const initials = (p.name || "?").slice(0, 2).toUpperCase();
     return `<div class="avatar" style="background:var(--${cls})" title="${escapeHtml(p.name)}">${escapeHtml(initials)}</div>`;
   }).join("");
 }
 
-function allAuthors(){
+function allAuthors() {
   const set = new Set();
-  (room.notes||[]).forEach(n=>set.add(n.author));
-  presenceList.forEach(p=>set.add(p.name));
+  (room.notes || []).forEach(n => set.add(n.author));
+  presenceList.forEach(p => set.add(p.name));
   set.add(myName);
   return Array.from(set).filter(Boolean);
 }
 
-function noteHtml(n){
+function noteHtml(n) {
   const rot = rotForId(n.id);
-  const myVote = (n.votes||[]).includes(myName);
+  let votes = n.votes || [];
+  if (!Array.isArray(votes)) votes = Object.values(votes);
+  const myVote = votes.includes(myName);
   const isMine = n.author === myName;
-  const menuOpen = openMenus['note:'+n.id] ? 'open' : '';
+  const menuOpen = openMenus['note:' + n.id] ? 'open' : '';
   const cols = THEMES[room.theme].columns;
-  const moveOptions = cols.filter(c=>c.id!==n.columnId).map(c=>
+  const moveOptions = cols.filter(c => c.id !== n.columnId).map(c =>
     `<button data-action="move-note" data-id="${n.id}" data-col="${c.id}">→ ${escapeHtml(c.label)}</button>`
   ).join("");
   return `
@@ -609,7 +739,7 @@ function noteHtml(n){
     <div class="meta">
       <span class="author">${escapeHtml(n.author)}</span>
       <div class="actions">
-        <button class="vote-btn ${myVote?'mine':''}" data-action="vote" data-id="${n.id}" title="Voter">❤ ${(n.votes||[]).length||''}</button>
+        <button class="vote-btn ${myVote ? 'mine' : ''}" data-action="vote" data-id="${n.id}" title="Voter">❤ ${votes.length || ''}</button>
         <div class="note-menu ${menuOpen}">
           <button class="icon-btn" data-action="toggle-note-menu" data-id="${n.id}">⋯</button>
           <div class="pop">
@@ -624,16 +754,16 @@ function noteHtml(n){
   </div>`;
 }
 
-function columnHtml(col){
-  const notes = (room.notes||[]).filter(n=>n.columnId===col.id).sort((a,b)=>a.order-b.order);
+function columnHtml(col) {
+  const notes = (room.notes || []).filter(n => n.columnId === col.id).sort((a, b) => a.order - b.order);
   const notesHtml = notes.map(noteHtml).join("");
   const composerOpen = composerOpenFor === col.id;
   return `
   <div class="column" data-col-id="${col.id}">
     <div class="column-head">
       <div class="tape" style="background:${col.tape}"></div>
-      <h3>${col.icon||""} ${escapeHtml(col.label)}</h3>
-      <div class="sub">${notes.length} post-it${notes.length>1?'s':''}</div>
+      <h3>${col.icon || ""} ${escapeHtml(col.label)}</h3>
+      <div class="sub">${notes.length} post-it${notes.length > 1 ? 's' : ''}</div>
     </div>
     <div class="column-body" data-col-id="${col.id}">
       ${notesHtml}
@@ -652,15 +782,15 @@ function columnHtml(col){
   </div>`;
 }
 
-function actionsViewHtml(){
-  const todos = (room.todos||[]).slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0) || a.order-b.order);
+function actionsViewHtml() {
+  const todos = (room.todos || []).slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.order - b.order);
   const authors = allAuthors();
-  const rows = todos.map(t=>{
+  const rows = todos.map(t => {
     const opts = ['<option value="">Non assigné</option>']
-      .concat(authors.map(a=>`<option value="${escapeHtml(a)}" ${t.assignee===a?'selected':''}>${escapeHtml(a)}</option>`)).join("");
+      .concat(authors.map(a => `<option value="${escapeHtml(a)}" ${t.assignee === a ? 'selected' : ''}>${escapeHtml(a)}</option>`)).join("");
     return `
-    <div class="todo-row ${t.done?'done':''}">
-      <button class="check ${t.done?'on':''}" data-action="toggle-todo" data-id="${t.id}">${t.done?'✓':''}</button>
+    <div class="todo-row ${t.done ? 'done' : ''}">
+      <button class="check ${t.done ? 'on' : ''}" data-action="toggle-todo" data-id="${t.id}">${t.done ? '✓' : ''}</button>
       <div class="todo-text">${escapeHtml(t.text)}</div>
       <select class="assignee-select" data-action="assign-todo" data-id="${t.id}">${opts}</select>
       <button class="icon-btn" data-action="delete-todo" data-id="${t.id}" title="Supprimer">✕</button>
@@ -683,7 +813,7 @@ function actionsViewHtml(){
   </div>`;
 }
 
-function renderBoard(){
+function renderBoard() {
   const themeDef = THEMES[room.theme];
   const timerOpen = openMenus['timer'] ? 'open' : '';
   const remain = room.timerEndsAt ? room.timerEndsAt - Date.now() : null;
@@ -699,7 +829,7 @@ function renderBoard(){
         <div class="presence" id="presence-list">${presenceHtml()}</div>
         <div class="timer-menu ${timerOpen}">
           <button class="btn btn-ghost btn-sm" data-action="toggle-timer-menu">
-            ⏱ <span id="timer-disp" class="disp ${remain!==null && remain<=0 ? 'done':''}">${room.timerEndsAt ? (remain>0?fmtClock(remain):'Fini') : '--:--'}</span>
+            ⏱ <span id="timer-disp" class="disp ${remain !== null && remain <= 0 ? 'done' : ''}">${room.timerEndsAt ? (remain > 0 ? fmtClock(remain) : 'Fini') : '--:--'}</span>
           </button>
           <div class="pop">
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="5">5 min</button>
@@ -712,10 +842,10 @@ function renderBoard(){
         <button class="btn btn-ghost btn-sm" data-action="leave-room">Quitter</button>
       </div>
       <div class="tabs">
-        <button class="tab ${activeTab==='board'?'active':''}" data-action="set-tab" data-tab="board">Tableau</button>
-        <button class="tab ${activeTab==='actions'?'active':''}" data-action="set-tab" data-tab="actions">Actions ${(room.todos||[]).length ? '('+room.todos.length+')' : ''}</button>
+        <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">Tableau</button>
+        <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">Actions ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
       </div>
-      ${activeTab==='board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : actionsViewHtml()}
+      ${activeTab === 'board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : actionsViewHtml()}
     </div>
     <div id="modal-root"></div>
   `;
@@ -724,35 +854,39 @@ function renderBoard(){
 
 /* ============================= EXPORT ============================= */
 
-function buildMarkdown(){
+function buildMarkdown() {
   const themeDef = THEMES[room.theme];
-  const date = new Date(room.createdAt||Date.now()).toLocaleDateString('fr-FR');
+  const date = new Date(room.createdAt || Date.now()).toLocaleDateString('fr-FR');
   let md = `# Rétrospective — ${themeDef.name}\n_${date} — salle ${roomCode}_\n\n`;
-  themeDef.columns.forEach(col=>{
-    const notes = (room.notes||[]).filter(n=>n.columnId===col.id).sort((a,b)=>(b.votes?.length||0)-(a.votes?.length||0));
-    md += `## ${col.icon||""} ${col.label}\n`;
-    if(!notes.length) md += `_Rien ici_\n`;
-    notes.forEach(n=>{
-      const votes = n.votes && n.votes.length ? ` (❤ ${n.votes.length})` : "";
+  themeDef.columns.forEach(col => {
+    const notes = (room.notes || []).filter(n => n.columnId === col.id).sort((a, b) => {
+      const va = Array.isArray(a.votes) ? a.votes.length : 0;
+      const vb = Array.isArray(b.votes) ? b.votes.length : 0;
+      return vb - va;
+    });
+    md += `## ${col.icon || ""} ${col.label}\n`;
+    if (!notes.length) md += `_Rien ici_\n`;
+    notes.forEach(n => {
+      const v = Array.isArray(n.votes) ? n.votes.length : 0;
+      const votes = v ? ` (❤ ${v})` : "";
       md += `- ${n.text} — *${n.author}*${votes}\n`;
     });
     md += `\n`;
   });
   md += `## ✅ Plan d'action\n`;
-  const todos = room.todos||[];
-  if(!todos.length) md += `_Aucune action définie_\n`;
-  todos.forEach(t=>{
-    md += `- [${t.done?'x':' '}] ${t.text}${t.assignee ? ' — *'+t.assignee+'*' : ''}\n`;
+  const todos = room.todos || [];
+  if (!todos.length) md += `_Aucune action définie_\n`;
+  todos.forEach(t => {
+    md += `- [${t.done ? 'x' : ' '}] ${t.text}${t.assignee ? ' — *' + t.assignee + '*' : ''}\n`;
   });
   return md;
 }
 
-function openExportModal(){
+function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal">
       <div class="modal" onclick="event.stopPropagation()">
-        <button class="close-x" data-action="close-modal">✕</button>
         <h3>Exporter la rétro</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
@@ -765,85 +899,56 @@ function openExportModal(){
 
 /* ============================= RENDER DISPATCH ============================= */
 
-function render(){
-  if(view === "home") renderHome();
+function render() {
+  if (loading) {
+    document.getElementById('app').innerHTML = `<div class="loading-overlay"><div class="spinner"></div></div>`;
+    return;
+  }
+  if (view === "home") renderHome();
   else renderBoard();
 }
 
 /* ============================= DRAG & DROP ============================= */
 
-function attachDnd(){
-  document.querySelectorAll('.note[draggable="true"]').forEach(el=>{
-    el.addEventListener('dragstart', e=>{
+function attachDnd() {
+  document.querySelectorAll('.note[draggable="true"]').forEach(el => {
+    el.addEventListener('dragstart', e => {
       el.classList.add('dragging');
       e.dataTransfer.setData('text/plain', el.dataset.noteId);
       e.dataTransfer.effectAllowed = 'move';
     });
-    el.addEventListener('dragend', ()=>{ el.classList.remove('dragging'); });
+    el.addEventListener('dragend', () => { el.classList.remove('dragging'); });
   });
-  document.querySelectorAll('.column-body').forEach(body=>{
-    body.addEventListener('dragover', e=>{
+  document.querySelectorAll('.column-body').forEach(body => {
+    body.addEventListener('dragover', e => {
       e.preventDefault();
       body.classList.add('drag-over');
-      const dragging = document.querySelector('.note.dragging');
-      if(!dragging) return;
-      const after = getDragAfterElement(body, e.clientY);
-      if(after == null) body.appendChild(dragging);
-      else body.insertBefore(dragging, after);
     });
-    body.addEventListener('dragleave', ()=>{ body.classList.remove('drag-over'); });
-    body.addEventListener('drop', async e=>{
+    body.addEventListener('dragleave', () => { body.classList.remove('drag-over'); });
+    body.addEventListener('drop', async e => {
       e.preventDefault();
       body.classList.remove('drag-over');
       const noteId = e.dataTransfer.getData('text/plain');
       const colId = body.dataset.colId;
-      const orderedIds = Array.from(body.querySelectorAll('.note')).map(n=>n.dataset.noteId);
-      await updateRoom(r=>{
-        r.notes = r.notes.map(n=>{
-          if(n.id===noteId){ n.columnId = colId; }
-          return n;
-        });
-        orderedIds.forEach((id,idx)=>{
-          const n = r.notes.find(x=>x.id===id);
-          if(n) n.order = idx;
-        });
-        // ensure the dragged note also gets a valid order if it just entered
-        const moved = r.notes.find(x=>x.id===noteId);
-        if(moved && !orderedIds.includes(noteId)) moved.order = 9999;
-        return r;
-      });
+      if (noteId && colId) {
+        await moveNote(noteId, colId);
+      }
     });
   });
 }
 
-function getDragAfterElement(container, y){
-  const els = [...container.querySelectorAll('.note:not(.dragging)')];
-  return els.reduce((closest, child)=>{
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height/2;
-    if(offset < 0 && offset > closest.offset){
-      return {offset, element:child};
-    } else return closest;
-  }, {offset:-Infinity, element:null}).element;
-}
-
 /* ============================= EVENTS ============================= */
 
-document.addEventListener('click', async (e)=>{
+document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');
 
-  // close open popovers if click outside them
-  if(!e.target.closest('.note-menu') ){ Object.keys(openMenus).forEach(k=>{ if(k.startsWith('note:')) openMenus[k]=false; }); }
-  if(!e.target.closest('.timer-menu')){ openMenus['timer']=false; }
+  if (!e.target.closest('.note-menu')) { Object.keys(openMenus).forEach(k => { if (k.startsWith('note:')) openMenus[k] = false; }); }
+  if (!e.target.closest('.timer-menu')) { openMenus['timer'] = false; }
 
-  if(!btn){
-    // re-render to close menus if needed, but avoid nuking active textarea focus
-    if(view==='board' && !e.target.closest('.composer')) syncMenusOnly();
-    return;
-  }
+  if (!btn) { return; }
   const action = btn.dataset.action;
 
-  switch(action){
+  switch (action) {
     case 'pick-theme':
       selectedTheme = btn.dataset.theme; render(); break;
 
@@ -851,13 +956,17 @@ document.addEventListener('click', async (e)=>{
       const nameInput = document.getElementById('create-name');
       const err = document.getElementById('create-error');
       const name = nameInput.value.trim();
-      if(!name){ err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
       myName = name; myColor = colorForName(name);
       btn.disabled = true; btn.textContent = "Création…";
-      try{
+      try {
         const code = await createRoom(selectedTheme);
         await enterRoom(code);
-      }catch(ex){ err.textContent = "Impossible de créer la salle. Réessaie."; btn.disabled=false; btn.textContent="Créer la salle →"; }
+      } catch (ex) {
+        console.error(ex);
+        err.textContent = "Impossible de créer la salle. Réessaie.";
+        btn.disabled = false; btn.textContent = "Créer la salle →";
+      }
       break;
     }
 
@@ -867,88 +976,57 @@ document.addEventListener('click', async (e)=>{
       const err = document.getElementById('join-error');
       const name = nameInput.value.trim();
       const code = codeInput.value.trim();
-      if(!name){ err.textContent = "Entre ton prénom pour continuer."; return; }
-      if(!code){ err.textContent = "Entre le code de la salle."; return; }
+      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!code) { err.textContent = "Entre le code de la salle."; return; }
       myName = name; myColor = colorForName(name);
       btn.disabled = true; btn.textContent = "Connexion…";
       const ok = await enterRoom(code);
-      if(!ok){ err.textContent = "Salle introuvable — vérifie le code."; btn.disabled=false; btn.textContent="Rejoindre →"; }
+      if (!ok) { err.textContent = "Salle introuvable — vérifie le code."; btn.disabled = false; btn.textContent = "Rejoindre →"; }
       break;
     }
 
     case 'leave-room': leaveRoom(); break;
 
     case 'copy-code':
-      navigator.clipboard.writeText(roomCode).then(()=>showToast("Code copié : "+roomCode));
+      navigator.clipboard.writeText(roomCode).then(() => showToast("Code copié : " + roomCode));
       break;
 
     case 'set-tab': activeTab = btn.dataset.tab; render(); break;
 
     case 'open-add':
       composerOpenFor = btn.dataset.col; render();
-      setTimeout(()=>{ const ta=document.getElementById('composer-input'); if(ta) ta.focus(); }, 0);
+      setTimeout(() => { const ta = document.getElementById('composer-input'); if (ta) ta.focus(); }, 0);
       break;
     case 'cancel-add': composerOpenFor = null; render(); break;
     case 'submit-add': {
       const ta = document.getElementById('composer-input');
       const text = ta.value.trim();
       const colId = btn.dataset.col;
-      if(!text){ composerOpenFor = null; render(); return; }
-      const newNote = { id:uid(), text, author:myName, color:myColor, columnId:colId, order:Date.now(), votes:[] };
+      if (!text) { composerOpenFor = null; render(); return; }
       composerOpenFor = null;
-      await updateRoom(r=>{ r.notes = r.notes || []; r.notes.push(newNote); return r; });
+      await addNote(colId, text);
       break;
     }
 
-    case 'vote': {
-      const id = btn.dataset.id;
-      await updateRoom(r=>{
-        const n = r.notes.find(x=>x.id===id);
-        if(!n) return r;
-        n.votes = n.votes || [];
-        const i = n.votes.indexOf(myName);
-        if(i>=0) n.votes.splice(i,1); else n.votes.push(myName);
-        return r;
-      });
-      break;
-    }
+    case 'vote': await toggleVote(btn.dataset.id); break;
 
     case 'toggle-note-menu': {
       const id = btn.dataset.id;
-      const key = 'note:'+id;
+      const key = 'note:' + id;
       const wasOpen = openMenus[key];
-      Object.keys(openMenus).forEach(k=>{ if(k.startsWith('note:')) openMenus[k]=false; });
+      Object.keys(openMenus).forEach(k => { if (k.startsWith('note:')) openMenus[k] = false; });
       openMenus[key] = !wasOpen;
       render();
       break;
     }
 
-    case 'move-note': {
-      const id = btn.dataset.id, col = btn.dataset.col;
-      await updateRoom(r=>{
-        const n = r.notes.find(x=>x.id===id);
-        if(n){ n.columnId = col; n.order = Date.now(); }
-        return r;
-      });
-      break;
-    }
-
-    case 'delete-note': {
-      const id = btn.dataset.id;
-      await updateRoom(r=>{ r.notes = r.notes.filter(n=>n.id!==id); return r; });
-      break;
-    }
+    case 'move-note': await moveNote(btn.dataset.id, btn.dataset.col); break;
+    case 'delete-note': await deleteNote(btn.dataset.id); break;
 
     case 'to-todo': {
-      const id = btn.dataset.id;
-      const n = room.notes.find(x=>x.id===id);
-      if(!n) break;
-      await updateRoom(r=>{
-        r.todos = r.todos || [];
-        r.todos.push({id:uid(), text:n.text, assignee:"", done:false, order:Date.now()});
-        return r;
-      });
-      activeTab = 'actions'; render();
+      await noteToTodo(btn.dataset.id);
+      activeTab = 'actions';
+      await refreshRoom();
       showToast("Action créée ↓");
       break;
     }
@@ -956,86 +1034,65 @@ document.addEventListener('click', async (e)=>{
     case 'add-todo': {
       const input = document.getElementById('new-todo-input');
       const text = input.value.trim();
-      if(!text) return;
-      await updateRoom(r=>{
-        r.todos = r.todos || [];
-        r.todos.push({id:uid(), text, assignee:"", done:false, order:Date.now()});
-        return r;
-      });
+      if (!text) return;
+      await addTodo(text);
+      await refreshRoom();
       break;
     }
-    case 'toggle-todo': {
-      const id = btn.dataset.id;
-      await updateRoom(r=>{
-        const t = r.todos.find(x=>x.id===id);
-        if(t) t.done = !t.done;
-        return r;
-      });
-      break;
-    }
-    case 'delete-todo': {
-      const id = btn.dataset.id;
-      await updateRoom(r=>{ r.todos = r.todos.filter(t=>t.id!==id); return r; });
-      break;
-    }
+    case 'toggle-todo': await toggleTodo(btn.dataset.id); await refreshRoom(); break;
+    case 'delete-todo': await deleteTodo(btn.dataset.id); await refreshRoom(); break;
 
     case 'toggle-timer-menu': openMenus['timer'] = !openMenus['timer']; render(); break;
     case 'start-timer': {
-      const min = parseInt(btn.dataset.min,10);
-      await updateRoom(r=>{ r.timerEndsAt = Date.now() + min*60000; return r; });
-      openMenus['timer']=false;
+      await setTimer(parseInt(btn.dataset.min, 10));
+      openMenus['timer'] = false;
       break;
     }
-    case 'clear-timer': {
-      await updateRoom(r=>{ r.timerEndsAt = null; return r; });
-      openMenus['timer']=false;
-      break;
-    }
+    case 'clear-timer': { await clearTimer(); openMenus['timer'] = false; break; }
 
     case 'open-export': openExportModal(); break;
-    case 'close-modal': document.getElementById('modal-root').innerHTML=''; break;
+    case 'close-modal': document.getElementById('modal-root').innerHTML = ''; break;
     case 'copy-export': {
       const ta = document.getElementById('export-text');
-      navigator.clipboard.writeText(ta.value).then(()=>showToast("Rétro copiée dans le presse-papiers ✓"));
+      navigator.clipboard.writeText(ta.value).then(() => showToast("Rétro copiée dans le presse-papiers ✓"));
       break;
     }
   }
 });
 
-document.addEventListener('change', async (e)=>{
-  if(e.target.matches('[data-action="assign-todo"]')){
-    const id = e.target.dataset.id;
-    const val = e.target.value;
-    await updateRoom(r=>{
-      const t = r.todos.find(x=>x.id===id);
-      if(t) t.assignee = val;
-      return r;
-    });
+document.addEventListener('change', async (e) => {
+  if (e.target.matches('[data-action="assign-todo"]')) {
+    await assignTodo(e.target.dataset.id, e.target.value);
   }
 });
 
-document.addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter' && e.target.id === 'new-todo-input'){
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.id === 'new-todo-input') {
     e.preventDefault();
     document.querySelector('[data-action="add-todo"]').click();
   }
-  if(e.key === 'Enter' && !e.shiftKey && e.target.id === 'composer-input'){
+  if (e.key === 'Enter' && !e.shiftKey && e.target.id === 'composer-input') {
     e.preventDefault();
     const submitBtn = document.querySelector('[data-action="submit-add"]');
-    if(submitBtn) submitBtn.click();
+    if (submitBtn) submitBtn.click();
   }
 });
 
-function syncMenusOnly(){
-  document.querySelectorAll('.note-menu').forEach(m=>m.classList.remove('open'));
-  document.querySelectorAll('.timer-menu').forEach(m=>m.classList.remove('open'));
-}
-
 /* ============================= BOOT ============================= */
-
-(async function boot(){
-  await loadProfile();
-  render();
+(async function boot() {
+  const savedRoom = localStorage.getItem('retrops_room');
+  const savedName = localStorage.getItem('retrops_name');
+  if (savedRoom && savedName) {
+    myName = savedName;
+    myColor = colorForName(myName);
+    const ok = await enterRoom(savedRoom);
+    if (!ok) {
+      localStorage.removeItem('retrops_room');
+      render();
+    }
+  } else {
+    render();
+  }
 })();
 </script>
 </body>
