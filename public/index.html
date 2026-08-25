@@ -590,7 +590,7 @@ async function setTimer(minutes) {
 }
 
 async function clearTimer() {
-  await fb.update(`rooms/${roomCode}`, { timerEndsAt: null });
+  await fb.update(`rooms/${roomCode}`, { timerEndsAt: 0 });
 }
 
 /* ============================= NAVIGATION ============================= */
@@ -715,7 +715,7 @@ function fmtClock(ms) {
 function renderTimerOnly() {
   const el = document.getElementById('timer-disp');
   if (!el || !room) return;
-  if (room.timerEndsAt) {
+  if (room.timerEndsAt && room.timerEndsAt > 0) {
     const remain = room.timerEndsAt - Date.now();
     el.textContent = remain > 0 ? fmtClock(remain) : "Fini";
     el.classList.toggle('done', remain <= 0);
@@ -843,7 +843,8 @@ function actionsViewHtml() {
 function renderBoard() {
   const themeDef = THEMES[room.theme];
   const timerOpen = openMenus['timer'] ? 'open' : '';
-  const remain = room.timerEndsAt ? room.timerEndsAt - Date.now() : null;
+  const timerActive = room.timerEndsAt && room.timerEndsAt > 0;
+  const remain = timerActive ? room.timerEndsAt - Date.now() : null;
 
   document.getElementById('app').innerHTML = `
     <div class="board-view">
@@ -856,7 +857,7 @@ function renderBoard() {
         <div class="presence" id="presence-list">${presenceHtml()}</div>
         <div class="timer-menu ${timerOpen}">
           <button class="btn btn-ghost btn-sm" data-action="toggle-timer-menu">
-            ⏱ <span id="timer-disp" class="disp ${remain !== null && remain <= 0 ? 'done' : ''}">${room.timerEndsAt ? (remain > 0 ? fmtClock(remain) : 'Fini') : '--:--'}</span>
+            ⏱ <span id="timer-disp" class="disp ${remain !== null && remain <= 0 ? 'done' : ''}">${timerActive ? (remain > 0 ? fmtClock(remain) : 'Fini') : '--:--'}</span>
           </button>
           <div class="pop">
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="5">5 min</button>
@@ -1076,9 +1077,10 @@ document.addEventListener('click', async (e) => {
     case 'start-timer': {
       await setTimer(parseInt(btn.dataset.min, 10));
       openMenus['timer'] = false;
+      await refreshRoom();
       break;
     }
-    case 'clear-timer': { await clearTimer(); openMenus['timer'] = false; break; }
+    case 'clear-timer': { await clearTimer(); openMenus['timer'] = false; await refreshRoom(); break; }
 
     case 'open-export': openExportModal(); break;
     case 'close-modal': document.getElementById('modal-root').innerHTML = ''; break;
