@@ -1,0 +1,10 @@
+{
+  "name": "retro-board",
+  "version": "1.0.0",
+  "description": "Outil de rétrospective d'équipe en temps réel — post-its, vote, plan d'action.",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve public -l 3000",
+    "build": "echo 'Static site — nothing to build'"
+  }
+}
