@@ -173,10 +173,11 @@
   }
   .column{
     min-width:280px; max-width:280px; display:flex; flex-direction:column;
-    background:rgba(0,0,0,0.12); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    background:rgba(0,0,0,0.12); border:1px solid var(--line); border-radius:14px; overflow:visible;
   }
   .column-head{
     padding:12px 14px 10px; border-bottom:2px dashed var(--line-strong); position:relative;
+    border-radius:14px 14px 0 0; background:rgba(0,0,0,0.08);
   }
   .column-head .tape{
     position:absolute; top:-1px; left:16px; width:44px; height:12px; border-radius:2px; opacity:0.9;
@@ -217,8 +218,8 @@
   }
   .note-menu{position:relative;}
   .note-menu .pop{
-    display:none; position:absolute; bottom:26px; right:0; background:#241a08; color:#F4F1E8;
-    border-radius:10px; padding:6px; min-width:170px; z-index:40; box-shadow:0 8px 20px rgba(0,0,0,0.4);
+    display:none; position:absolute; top:28px; right:0; background:#241a08; color:#F4F1E8;
+    border-radius:10px; padding:6px; min-width:170px; z-index:50; box-shadow:0 8px 20px rgba(0,0,0,0.4);
     font-family:'Manrope',sans-serif;
   }
   .note-menu.open .pop{display:block;}
@@ -566,6 +567,11 @@ async function noteToTodo(noteId) {
   await addTodo(note.text);
 }
 
+async function refreshRoom() {
+  const data = await fetchRoom(roomCode);
+  if (data) { room = roomToArrays(data); render(); }
+}
+
 async function setTimer(minutes) {
   await fb.update(`rooms/${roomCode}`, { timerEndsAt: Date.now() + minutes * 60000 });
 }
@@ -586,6 +592,7 @@ async function enterRoom(code) {
     view = "board";
     activeTab = "board";
     localStorage.setItem('retrops_name', myName);
+    localStorage.setItem('retrops_room', roomCode);
     loading = false;
     render();
     startListening(roomCode);
@@ -611,6 +618,7 @@ function leaveRoom() {
   if (pollTimer) clearInterval(pollTimer);
   if (clockTimer) clearInterval(clockTimer);
   view = "home"; room = null; roomCode = null; presenceList = [];
+  localStorage.removeItem('retrops_room');
   render();
 }
 
@@ -1017,7 +1025,8 @@ document.addEventListener('click', async (e) => {
 
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
-      activeTab = 'actions'; render();
+      activeTab = 'actions';
+      await refreshRoom();
       showToast("Action créée ↓");
       break;
     }
@@ -1027,10 +1036,11 @@ document.addEventListener('click', async (e) => {
       const text = input.value.trim();
       if (!text) return;
       await addTodo(text);
+      await refreshRoom();
       break;
     }
-    case 'toggle-todo': await toggleTodo(btn.dataset.id); break;
-    case 'delete-todo': await deleteTodo(btn.dataset.id); break;
+    case 'toggle-todo': await toggleTodo(btn.dataset.id); await refreshRoom(); break;
+    case 'delete-todo': await deleteTodo(btn.dataset.id); await refreshRoom(); break;
 
     case 'toggle-timer-menu': openMenus['timer'] = !openMenus['timer']; render(); break;
     case 'start-timer': {
@@ -1069,7 +1079,21 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ============================= BOOT ============================= */
-render();
+(async function boot() {
+  const savedRoom = localStorage.getItem('retrops_room');
+  const savedName = localStorage.getItem('retrops_name');
+  if (savedRoom && savedName) {
+    myName = savedName;
+    myColor = colorForName(myName);
+    const ok = await enterRoom(savedRoom);
+    if (!ok) {
+      localStorage.removeItem('retrops_room');
+      render();
+    }
+  } else {
+    render();
+  }
+})();
 </script>
 </body>
 </html>
