@@ -1344,7 +1344,7 @@ function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal" onclick="if(!event.target.closest('[data-action=close-modal]'))event.stopPropagation()">
         <h3>Exporter la rétro</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
