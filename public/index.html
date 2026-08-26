@@ -1163,124 +1163,69 @@ function msgViewHtml() {
   const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
   return `
   <div class="sailboat-view">
-    <div class="visual-container" style="background:#3a5a30">
-      <svg class="visual-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="msg-mad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#2d0808"/>
-            <stop offset="60%"  stop-color="#6b1212"/>
-            <stop offset="100%" stop-color="#9c2a2a"/>
-          </linearGradient>
-          <linearGradient id="msg-sad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#28384a"/>
-            <stop offset="100%" stop-color="#546878"/>
-          </linearGradient>
-          <linearGradient id="msg-glad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#5ba3d9"/>
-            <stop offset="100%" stop-color="#b8dff0"/>
-          </linearGradient>
-          <linearGradient id="msg-ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#5a7a4a"/>
-            <stop offset="100%" stop-color="#3a5a30"/>
-          </linearGradient>
-        </defs>
+    <div class="visual-container" style="display:flex; width:100%; max-width:1100px; border-radius:14px; overflow:hidden;">
 
-        <!-- Three sky sections -->
-        <rect x="0"   y="0" width="367" height="700" fill="url(#msg-mad-bg)"/>
-        <rect x="367" y="0" width="366" height="700" fill="url(#msg-sad-bg)"/>
-        <rect x="733" y="0" width="367" height="700" fill="url(#msg-glad-bg)"/>
-        <!-- Section dividers -->
-        <line x1="367" y1="0" x2="367" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-        <line x1="733" y1="0" x2="733" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-        <!-- Section labels -->
-        <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,100,100,0.9)" text-anchor="middle">😠 Mad</text>
-        <text x="550" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(160,200,230,0.9)" text-anchor="middle">😢 Sad</text>
-        <text x="917" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,220,50,0.95)" text-anchor="middle">😊 Glad</text>
-
-        <!-- MAD: storm clouds + lightning + heavy rain -->
-        <ellipse cx="100" cy="105" rx="115" ry="48" fill="#0d0d0d" opacity="0.95"/>
-        <ellipse cx="210" cy="82"  rx="100" ry="42" fill="#1a1a1a" opacity="0.9"/>
-        <ellipse cx="318" cy="115" rx="85"  ry="40" fill="#111"    opacity="0.88"/>
-        <ellipse cx="165" cy="100" rx="78"  ry="33" fill="#222"    opacity="0.8"/>
-        <ellipse cx="183" cy="148" rx="130" ry="18" fill="#9b1c1c" opacity="0.35"/>
-        <path d="M218 155 L200 218 L216 218 L190 290 L244 218 L228 218 L252 155 Z" fill="#ffe033" opacity="0.95"/>
-        <line x1="55"  y1="153" x2="43"  y2="213" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
-        <line x1="85"  y1="157" x2="73"  y2="217" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
-        <line x1="115" y1="153" x2="103" y2="213" stroke="rgba(120,150,200,0.45)" stroke-width="1.5"/>
-        <line x1="295" y1="153" x2="283" y2="213" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
-        <line x1="325" y1="157" x2="313" y2="217" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
-        <line x1="352" y1="153" x2="340" y2="213" stroke="rgba(120,150,200,0.35)" stroke-width="1.5"/>
-        <!-- house mad -->
-        <rect x="65"  y="468" width="84" height="62" fill="#3a2020" opacity="0.85"/>
-        <polygon points="65,468 107,438 149,468" fill="#4a2828" opacity="0.85"/>
-        <rect x="90"  y="490" width="20" height="20" fill="#100808" opacity="0.95"/>
-        <rect x="116" y="490" width="20" height="20" fill="#7a1515" opacity="0.6"/>
-
-        <!-- SAD: grey clouds + moderate rain + puddle -->
-        <ellipse cx="478" cy="96"  rx="95" ry="38" fill="#5a6878" opacity="0.9"/>
-        <ellipse cx="562" cy="76"  rx="82" ry="33" fill="#6a788a" opacity="0.85"/>
-        <ellipse cx="650" cy="105" rx="72" ry="30" fill="#5a6878" opacity="0.8"/>
-        <ellipse cx="722" cy="90"  rx="60" ry="27" fill="#6a788a" opacity="0.75"/>
-        <line x1="458" y1="146" x2="450" y2="196" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="488" y1="140" x2="480" y2="190" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="518" y1="143" x2="510" y2="193" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="550" y1="145" x2="542" y2="195" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="580" y1="140" x2="572" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="610" y1="143" x2="602" y2="193" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
-        <line x1="640" y1="140" x2="632" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="670" y1="145" x2="662" y2="195" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
-        <line x1="700" y1="140" x2="692" y2="190" stroke="rgba(140,175,215,0.4)"  stroke-width="1.5"/>
-        <ellipse cx="552" cy="537" rx="85" ry="14" fill="rgba(100,140,180,0.35)"/>
-        <!-- house sad -->
-        <rect x="452" y="475" width="78" height="57" fill="#48596a" opacity="0.85"/>
-        <polygon points="452,475 491,448 530,475" fill="#586a7a" opacity="0.85"/>
-        <rect x="477" y="493" width="17" height="17" fill="#38485a" opacity="0.9"/>
-
-        <!-- GLAD: sun + rays + rainbow + fluffy clouds + cheerful house -->
-        <circle cx="912" cy="88" r="60" fill="#FFD700" opacity="0.12"/>
-        <circle cx="912" cy="88" r="38" fill="#FFD700" opacity="0.95"/>
-        <line x1="912" y1="38"  x2="912" y2="22"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="950" y1="50"  x2="961" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="962" y1="88"  x2="978" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="950" y1="126" x2="961" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="912" y1="138" x2="912" y2="154" stroke="#FFD700" stroke-width="3" opacity="0.7"/>
-        <line x1="874" y1="126" x2="863" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="862" y1="88"  x2="846" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="874" y1="50"  x2="863" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <path d="M738 440 Q870 258 1100 430" stroke="rgba(255,0,0,0.4)"    stroke-width="4" fill="none"/>
-        <path d="M742 436 Q870 267 1096 426" stroke="rgba(255,140,0,0.4)"  stroke-width="4" fill="none"/>
-        <path d="M746 432 Q870 276 1092 422" stroke="rgba(255,255,0,0.4)"  stroke-width="4" fill="none"/>
-        <path d="M750 428 Q870 285 1088 418" stroke="rgba(0,200,80,0.4)"   stroke-width="4" fill="none"/>
-        <path d="M754 424 Q870 294 1084 414" stroke="rgba(0,100,255,0.35)" stroke-width="4" fill="none"/>
-        <ellipse cx="790" cy="155" rx="58" ry="24" fill="white" opacity="0.88"/>
-        <ellipse cx="822" cy="140" rx="44" ry="20" fill="white" opacity="0.92"/>
-        <ellipse cx="1058" cy="168" rx="50" ry="22" fill="white" opacity="0.82"/>
-        <!-- house glad -->
-        <rect x="820" y="462" width="82" height="68" fill="#e8d5a0" opacity="0.92"/>
-        <polygon points="820,462 861,432 902,462" fill="#d47a50" opacity="0.92"/>
-        <rect x="843" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
-        <rect x="868" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
-        <circle cx="810" cy="529" r="5" fill="#FF9999" opacity="0.85"/>
-        <line x1="810" y1="534" x2="810" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
-        <circle cx="825" cy="527" r="5" fill="#FFB3FF" opacity="0.85"/>
-        <line x1="825" y1="532" x2="825" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
-
-        <!-- Shared ground -->
-        <rect x="0" y="530" width="1100" height="170" fill="url(#msg-ground)"/>
-        <path d="M42  530 Q46  518 50  530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M120 530 Q124 520 128 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M245 530 Q249 518 253 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M420 530 Q424 520 428 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M600 530 Q604 518 608 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M810 530 Q814 520 818 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M995 530 Q999 518 1003 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-      </svg>
-
-      <div class="visual-zones cols-3">
-        <div class="vz" style="background:rgba(107,18,18,0.5)"><div class="vz-header">😠 Mad</div><div class="vz-notes">${mad.length ? mad.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz" style="background:rgba(84,104,120,0.5)"><div class="vz-header">😢 Sad</div><div class="vz-notes">${sad.length ? sad.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz" style="background:rgba(91,163,217,0.3)"><div class="vz-header">😊 Glad</div><div class="vz-notes">${glad.length ? glad.map(sbNoteHtml).join('') : empty}</div></div>
+      <!-- MAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #2d0808, #6b1212 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px;">
+        <svg viewBox="0 0 367 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <ellipse cx="100" cy="105" rx="115" ry="48" fill="#0d0d0d" opacity="0.95"/>
+          <ellipse cx="210" cy="82" rx="100" ry="42" fill="#1a1a1a" opacity="0.9"/>
+          <ellipse cx="318" cy="115" rx="85" ry="40" fill="#111" opacity="0.88"/>
+          <ellipse cx="165" cy="100" rx="78" ry="33" fill="#222" opacity="0.8"/>
+          <path d="M218 155 L200 218 L216 218 L190 290 L244 218 L228 218 L252 155 Z" fill="#ffe033" opacity="0.95"/>
+          <line x1="55" y1="153" x2="43" y2="213" stroke="rgba(120,150,200,0.5)" stroke-width="1.5"/>
+          <line x1="85" y1="157" x2="73" y2="217" stroke="rgba(120,150,200,0.5)" stroke-width="1.5"/>
+          <line x1="115" y1="153" x2="103" y2="213" stroke="rgba(120,150,200,0.45)" stroke-width="1.5"/>
+          <line x1="295" y1="153" x2="283" y2="213" stroke="rgba(120,150,200,0.4)" stroke-width="1.5"/>
+          <line x1="325" y1="157" x2="313" y2="217" stroke="rgba(120,150,200,0.4)" stroke-width="1.5"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,100,100,0.9)" text-anchor="middle">😠 Mad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${mad.length ? mad.map(sbNoteHtml).join('') : empty}
+        </div>
       </div>
+
+      <!-- SAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #28384a, #546878 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px; border-left:1px solid rgba(255,255,255,0.08); border-right:1px solid rgba(255,255,255,0.08);">
+        <svg viewBox="0 0 366 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <ellipse cx="150" cy="96" rx="95" ry="38" fill="#5a6878" opacity="0.9"/>
+          <ellipse cx="220" cy="76" rx="82" ry="33" fill="#6a788a" opacity="0.85"/>
+          <ellipse cx="300" cy="105" rx="72" ry="30" fill="#5a6878" opacity="0.8"/>
+          <line x1="100" y1="146" x2="92" y2="196" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="140" y1="140" x2="132" y2="190" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="180" y1="143" x2="172" y2="193" stroke="rgba(140,175,215,0.5)" stroke-width="1.5"/>
+          <line x1="220" y1="145" x2="212" y2="195" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="260" y1="140" x2="252" y2="190" stroke="rgba(140,175,215,0.5)" stroke-width="1.5"/>
+          <line x1="300" y1="143" x2="292" y2="193" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(160,200,230,0.9)" text-anchor="middle">😢 Sad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${sad.length ? sad.map(sbNoteHtml).join('') : empty}
+        </div>
+      </div>
+
+      <!-- GLAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #5ba3d9, #b8dff0 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px;">
+        <svg viewBox="0 0 367 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <circle cx="200" cy="88" r="60" fill="#FFD700" opacity="0.12"/>
+          <circle cx="200" cy="88" r="38" fill="#FFD700" opacity="0.95"/>
+          <line x1="200" y1="38" x2="200" y2="22" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="238" y1="50" x2="249" y2="39" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="250" y1="88" x2="266" y2="88" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="238" y1="126" x2="249" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="200" y1="138" x2="200" y2="154" stroke="#FFD700" stroke-width="3" opacity="0.7"/>
+          <line x1="162" y1="126" x2="151" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="150" y1="88" x2="134" y2="88" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="162" y1="50" x2="151" y2="39" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <ellipse cx="90" cy="155" rx="58" ry="24" fill="white" opacity="0.88"/>
+          <ellipse cx="320" cy="168" rx="50" ry="22" fill="white" opacity="0.82"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,220,50,0.95)" text-anchor="middle">😊 Glad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${glad.length ? glad.map(sbNoteHtml).join('') : empty}
+        </div>
+      </div>
+
     </div>
   </div>`;
 }
