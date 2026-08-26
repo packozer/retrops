@@ -216,6 +216,7 @@
     background:rgba(0,0,0,0.1); border:none; border-radius:8px; width:22px; height:22px;
     display:flex; align-items:center; justify-content:center; font-size:11px; color:inherit;
   }
+  .note:has(.note-menu.open){z-index:10;}
   .note-menu{position:relative;}
   .note-menu .pop{
     display:none; position:absolute; top:28px; right:0; background:#241a08; color:#F4F1E8;
@@ -270,12 +271,35 @@
     display:flex; align-items:center; justify-content:center; font-size:11px; background:none; color:var(--ink);
   }
   .check.on{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
-  .todo-text{flex:1; font-size:13.5px; line-height:1.4;}
+  .todo-text{flex:1; min-width:0; font-size:13.5px; line-height:1.4; word-break:break-word;}
   .assignee-select{
     background:var(--canvas-alt); border:1px solid var(--line-strong); color:var(--ink-dim);
     border-radius:7px; padding:5px 8px; font-size:11.5px; max-width:120px;
   }
   .todo-empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:30px 0;}
+
+  /* ---------- JOIN VIEW ---------- */
+  .join-view{
+    flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px;
+  }
+  .join-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:32px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:16px;
+    text-align:center;
+  }
+  .join-card .brand{
+    font-family:'Kalam',cursive; font-weight:700; font-size:32px;
+    transform:rotate(-1.5deg); display:inline-block;
+  }
+  .join-card .brand .dot{color:var(--accent);}
+  .join-card .room-info{
+    background:var(--canvas-alt); border:1px dashed var(--line-strong); border-radius:10px;
+    padding:12px; display:flex; flex-direction:column; gap:4px;
+  }
+  .join-card .room-info .code{
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; letter-spacing:0.14em;
+  }
+  .join-card .room-info .theme-name{font-size:13px; color:var(--ink-dim);}
 
   /* ---------- toast / modal ---------- */
   .toast{
@@ -315,10 +339,10 @@
   .sailboat-scene{position:relative; width:1100px; min-height:700px; flex-shrink:0;}
   .sailboat-svg{width:100%; height:auto;}
   .sb-zone{position:absolute; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; padding:8px;}
-  .sb-zone-wind{top:20px; left:50px; width:300px; max-height:200px;}
-  .sb-zone-island{top:30px; right:30px; width:280px; max-height:200px;}
-  .sb-zone-anchor{bottom:30px; left:340px; width:300px; max-height:180px;}
-  .sb-zone-rocks{bottom:40px; right:60px; width:280px; max-height:180px;}
+  .sb-zone-wind{top:20px; left:50px; width:300px;}
+  .sb-zone-island{top:30px; right:30px; width:280px;}
+  .sb-zone-anchor{bottom:30px; left:340px; width:300px;}
+  .sb-zone-rocks{bottom:40px; right:60px; width:280px;}
   .sb-note{
     padding:8px 10px; border-radius:3px 8px 8px 8px; font-family:'Kalam',cursive; font-size:12px;
     line-height:1.3; max-width:140px; box-shadow:0 3px 8px rgba(0,0,0,0.3);
@@ -345,6 +369,17 @@
     font-family:'Manrope',sans-serif; font-size:11px; color:rgba(255,255,255,0.4);
     font-style:italic; padding:4px;
   }
+
+  /* ---------- MAD/SAD/GLAD VISUAL ---------- */
+  .msg-zone-mad{top:220px; left:10px;  width:330px;}
+  .msg-zone-sad{top:220px; left:380px; width:340px;}
+  .msg-zone-glad{top:220px; left:745px; width:340px;}
+
+  /* ---------- 4 L'S VISUAL ---------- */
+  .fl-zone-liked{top:60px; left:360px; width:380px;}
+  .fl-zone-longed{top:50px; right:10px; width:270px;}
+  .fl-zone-learned{top:430px; left:10px; width:280px;}
+  .fl-zone-lacked{top:430px; left:760px; width:300px;}
 
   @media (max-width:640px){
     .home-cards{flex-direction:column; align-items:stretch;}
@@ -478,7 +513,7 @@ function showToast(msg) {
 
 /* ============================= APP STATE ============================= */
 
-let view = "home";
+let view = "home"; // home | join | board
 let myName = localStorage.getItem('retrops_name') || "";
 let myColor = localStorage.getItem('retrops_color') || "note-1";
 let selectedTheme = "sstop";
@@ -493,6 +528,8 @@ let openMenus = {};
 let composerOpenFor = null;
 let roomListener = null; // SSE EventSource
 let loading = false;
+let urlCode = null; // room code extracted from URL
+let joinRoomData = null; // room metadata for join view
 
 /* ============================= FIREBASE SYNC ============================= */
 
@@ -527,11 +564,16 @@ function roomToArrays(data) {
 function startListening(code) {
   if (roomListener) roomListener.close();
   roomListener = fb.listen(`rooms/${code}`, (event) => {
-    // On any change, re-fetch the full room for simplicity
     fb.get(`rooms/${code}`).then(data => {
       if (data) {
+        const ta = document.getElementById('composer-input');
+        const draft = ta ? ta.value : '';
         room = roomToArrays(data);
         render();
+        if (draft && composerOpenFor) {
+          const ta2 = document.getElementById('composer-input');
+          if (ta2) ta2.value = draft;
+        }
       }
     }).catch(() => { });
   });
@@ -643,6 +685,7 @@ async function enterRoom(code) {
     localStorage.setItem('retrops_name', myName);
     localStorage.setItem('retrops_room', roomCode);
     localStorage.setItem('retrops_color', myColor);
+    history.replaceState(null, '', '/' + roomCode);
     loading = false;
     render();
     startListening(roomCode);
@@ -669,6 +712,7 @@ function leaveRoom() {
   if (clockTimer) clearInterval(clockTimer);
   view = "home"; room = null; roomCode = null; presenceList = [];
   localStorage.removeItem('retrops_room');
+  history.replaceState(null, '', '/');
   render();
 }
 
@@ -695,7 +739,7 @@ function renderHome() {
   document.getElementById('app').innerHTML = `
     <div class="home">
       <div class="home-hero">
-        <div class="brand">Rétrops<span class="dot">.</span></div>
+        <div class="brand">RétrOps<span class="dot">.</span></div>
         <p>Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.</p>
       </div>
       <div class="home-cards">
@@ -733,6 +777,40 @@ function renderHome() {
           <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
           <div class="hint-error" id="join-error"></div>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================= RENDER: JOIN (URL LINK) ============================= */
+
+function renderJoin() {
+  const colorDots = NOTE_COLORS.map(c => {
+    const sel = myColor === c ? 'selected' : '';
+    const inkVar = `var(--${c}-ink)`;
+    return `<button class="color-dot ${sel}" style="background:var(--${c});color:${inkVar}" data-action="pick-color" data-color="${c}"></button>`;
+  }).join("");
+
+  const themeName = joinRoomData && THEMES[joinRoomData.theme] ? THEMES[joinRoomData.theme].name : '';
+
+  document.getElementById('app').innerHTML = `
+    <div class="join-view">
+      <div class="join-card">
+        <div class="brand">Rétrops<span class="dot">.</span></div>
+        <div class="room-info">
+          <div class="code">${urlCode}</div>
+          ${themeName ? `<div class="theme-name">${escapeHtml(themeName)}</div>` : ''}
+        </div>
+        <div class="field" style="text-align:left">
+          <label>Ton prénom</label>
+          <input id="join-url-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24" autofocus>
+        </div>
+        <div class="field" style="text-align:left">
+          <label>Ta couleur de post-it</label>
+          <div class="color-picker">${colorDots}</div>
+        </div>
+        <button class="btn btn-primary btn-block" data-action="join-room-url">Rejoindre la rétro →</button>
+        <div class="hint-error" id="join-url-error"></div>
       </div>
     </div>
   `;
@@ -885,7 +963,7 @@ function renderBoard() {
   document.getElementById('app').innerHTML = `
     <div class="board-view">
       <div class="topbar">
-        <div class="room-badge" data-action="copy-code" title="Copier le code">
+        <div class="room-badge" data-action="copy-code" title="Copier le lien de la salle">
           <div><div class="lbl">Salle</div><div class="code">${roomCode}</div></div>
         </div>
         <div class="theme-pill">${themeDef.name}</div>
@@ -907,10 +985,10 @@ function renderBoard() {
       </div>
       <div class="tabs">
         <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">Tableau</button>
-        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛵ Vue Sailboat</button>` : ''}
+        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛵ Vue Sailboat</button>` : room.theme === 'msg' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">🌦 Vue Météo</button>` : room.theme === 'fourls' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛰ Vue Montagne</button>` : ''}
         <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">Actions ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
       </div>
-      ${activeTab === 'board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : activeTab === 'visual' ? sailboatViewHtml() : actionsViewHtml()}
+      ${activeTab === 'board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : activeTab === 'visual' ? (room.theme === 'msg' ? msgViewHtml() : room.theme === 'fourls' ? fourlsViewHtml() : sailboatViewHtml()) : actionsViewHtml()}
     </div>
     <div id="modal-root"></div>
   `;
@@ -942,7 +1020,7 @@ function sailboatViewHtml() {
 
   return `
   <div class="sailboat-view">
-    <div class="sailboat-scene">
+    <div class="sailboat-scene" style="background:#0b2e4a">
       <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
         <!-- Sky gradient -->
         <defs>
@@ -1060,6 +1138,245 @@ function sailboatViewHtml() {
   </div>`;
 }
 
+/* ============================= MAD/SAD/GLAD VISUAL ============================= */
+
+function msgViewHtml() {
+  const notes = room.notes || [];
+  const mad   = notes.filter(n => n.columnId === 'mad');
+  const sad   = notes.filter(n => n.columnId === 'sad');
+  const glad  = notes.filter(n => n.columnId === 'glad');
+  const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
+  return `
+  <div class="sailboat-view">
+    <div class="sailboat-scene" style="background:#3a5a30">
+      <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="msg-mad-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#2d0808"/>
+            <stop offset="60%"  stop-color="#6b1212"/>
+            <stop offset="100%" stop-color="#9c2a2a"/>
+          </linearGradient>
+          <linearGradient id="msg-sad-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#28384a"/>
+            <stop offset="100%" stop-color="#546878"/>
+          </linearGradient>
+          <linearGradient id="msg-glad-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#5ba3d9"/>
+            <stop offset="100%" stop-color="#b8dff0"/>
+          </linearGradient>
+          <linearGradient id="msg-ground" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#5a7a4a"/>
+            <stop offset="100%" stop-color="#3a5a30"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Three sky sections -->
+        <rect x="0"   y="0" width="367" height="700" fill="url(#msg-mad-bg)"/>
+        <rect x="367" y="0" width="366" height="700" fill="url(#msg-sad-bg)"/>
+        <rect x="733" y="0" width="367" height="700" fill="url(#msg-glad-bg)"/>
+        <!-- Section dividers -->
+        <line x1="367" y1="0" x2="367" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+        <line x1="733" y1="0" x2="733" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+        <!-- Section labels -->
+        <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,100,100,0.9)" text-anchor="middle">😠 Mad</text>
+        <text x="550" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(160,200,230,0.9)" text-anchor="middle">😢 Sad</text>
+        <text x="917" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,220,50,0.95)" text-anchor="middle">😊 Glad</text>
+
+        <!-- MAD: storm clouds + lightning + heavy rain -->
+        <ellipse cx="100" cy="105" rx="115" ry="48" fill="#0d0d0d" opacity="0.95"/>
+        <ellipse cx="210" cy="82"  rx="100" ry="42" fill="#1a1a1a" opacity="0.9"/>
+        <ellipse cx="318" cy="115" rx="85"  ry="40" fill="#111"    opacity="0.88"/>
+        <ellipse cx="165" cy="100" rx="78"  ry="33" fill="#222"    opacity="0.8"/>
+        <ellipse cx="183" cy="148" rx="130" ry="18" fill="#9b1c1c" opacity="0.35"/>
+        <path d="M218 155 L200 218 L216 218 L190 290 L244 218 L228 218 L252 155 Z" fill="#ffe033" opacity="0.95"/>
+        <line x1="55"  y1="153" x2="43"  y2="213" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
+        <line x1="85"  y1="157" x2="73"  y2="217" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
+        <line x1="115" y1="153" x2="103" y2="213" stroke="rgba(120,150,200,0.45)" stroke-width="1.5"/>
+        <line x1="295" y1="153" x2="283" y2="213" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
+        <line x1="325" y1="157" x2="313" y2="217" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
+        <line x1="352" y1="153" x2="340" y2="213" stroke="rgba(120,150,200,0.35)" stroke-width="1.5"/>
+        <!-- house mad -->
+        <rect x="65"  y="468" width="84" height="62" fill="#3a2020" opacity="0.85"/>
+        <polygon points="65,468 107,438 149,468" fill="#4a2828" opacity="0.85"/>
+        <rect x="90"  y="490" width="20" height="20" fill="#100808" opacity="0.95"/>
+        <rect x="116" y="490" width="20" height="20" fill="#7a1515" opacity="0.6"/>
+
+        <!-- SAD: grey clouds + moderate rain + puddle -->
+        <ellipse cx="478" cy="96"  rx="95" ry="38" fill="#5a6878" opacity="0.9"/>
+        <ellipse cx="562" cy="76"  rx="82" ry="33" fill="#6a788a" opacity="0.85"/>
+        <ellipse cx="650" cy="105" rx="72" ry="30" fill="#5a6878" opacity="0.8"/>
+        <ellipse cx="722" cy="90"  rx="60" ry="27" fill="#6a788a" opacity="0.75"/>
+        <line x1="458" y1="146" x2="450" y2="196" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+        <line x1="488" y1="140" x2="480" y2="190" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+        <line x1="518" y1="143" x2="510" y2="193" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
+        <line x1="550" y1="145" x2="542" y2="195" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+        <line x1="580" y1="140" x2="572" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
+        <line x1="610" y1="143" x2="602" y2="193" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
+        <line x1="640" y1="140" x2="632" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
+        <line x1="670" y1="145" x2="662" y2="195" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
+        <line x1="700" y1="140" x2="692" y2="190" stroke="rgba(140,175,215,0.4)"  stroke-width="1.5"/>
+        <ellipse cx="552" cy="537" rx="85" ry="14" fill="rgba(100,140,180,0.35)"/>
+        <!-- house sad -->
+        <rect x="452" y="475" width="78" height="57" fill="#48596a" opacity="0.85"/>
+        <polygon points="452,475 491,448 530,475" fill="#586a7a" opacity="0.85"/>
+        <rect x="477" y="493" width="17" height="17" fill="#38485a" opacity="0.9"/>
+
+        <!-- GLAD: sun + rays + rainbow + fluffy clouds + cheerful house -->
+        <circle cx="912" cy="88" r="60" fill="#FFD700" opacity="0.12"/>
+        <circle cx="912" cy="88" r="38" fill="#FFD700" opacity="0.95"/>
+        <line x1="912" y1="38"  x2="912" y2="22"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="950" y1="50"  x2="961" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="962" y1="88"  x2="978" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="950" y1="126" x2="961" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="912" y1="138" x2="912" y2="154" stroke="#FFD700" stroke-width="3" opacity="0.7"/>
+        <line x1="874" y1="126" x2="863" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="862" y1="88"  x2="846" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <line x1="874" y1="50"  x2="863" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+        <path d="M738 440 Q870 258 1100 430" stroke="rgba(255,0,0,0.4)"    stroke-width="4" fill="none"/>
+        <path d="M742 436 Q870 267 1096 426" stroke="rgba(255,140,0,0.4)"  stroke-width="4" fill="none"/>
+        <path d="M746 432 Q870 276 1092 422" stroke="rgba(255,255,0,0.4)"  stroke-width="4" fill="none"/>
+        <path d="M750 428 Q870 285 1088 418" stroke="rgba(0,200,80,0.4)"   stroke-width="4" fill="none"/>
+        <path d="M754 424 Q870 294 1084 414" stroke="rgba(0,100,255,0.35)" stroke-width="4" fill="none"/>
+        <ellipse cx="790" cy="155" rx="58" ry="24" fill="white" opacity="0.88"/>
+        <ellipse cx="822" cy="140" rx="44" ry="20" fill="white" opacity="0.92"/>
+        <ellipse cx="1058" cy="168" rx="50" ry="22" fill="white" opacity="0.82"/>
+        <!-- house glad -->
+        <rect x="820" y="462" width="82" height="68" fill="#e8d5a0" opacity="0.92"/>
+        <polygon points="820,462 861,432 902,462" fill="#d47a50" opacity="0.92"/>
+        <rect x="843" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
+        <rect x="868" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
+        <circle cx="810" cy="529" r="5" fill="#FF9999" opacity="0.85"/>
+        <line x1="810" y1="534" x2="810" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
+        <circle cx="825" cy="527" r="5" fill="#FFB3FF" opacity="0.85"/>
+        <line x1="825" y1="532" x2="825" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
+
+        <!-- Shared ground -->
+        <rect x="0" y="530" width="1100" height="170" fill="url(#msg-ground)"/>
+        <path d="M42  530 Q46  518 50  530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M120 530 Q124 520 128 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M245 530 Q249 518 253 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M420 530 Q424 520 428 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M600 530 Q604 518 608 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M810 530 Q814 520 818 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+        <path d="M995 530 Q999 518 1003 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
+      </svg>
+
+      <div class="sb-zone msg-zone-mad">${mad.length ? mad.map(sbNoteHtml).join('') : empty}</div>
+      <div class="sb-zone msg-zone-sad">${sad.length ? sad.map(sbNoteHtml).join('') : empty}</div>
+      <div class="sb-zone msg-zone-glad">${glad.length ? glad.map(sbNoteHtml).join('') : empty}</div>
+    </div>
+  </div>`;
+}
+
+/* ============================= 4 L'S VISUAL ============================= */
+
+function fourlsViewHtml() {
+  const notes   = room.notes || [];
+  const liked   = notes.filter(n => n.columnId === 'liked');
+  const learned = notes.filter(n => n.columnId === 'learned');
+  const lacked  = notes.filter(n => n.columnId === 'lacked');
+  const longed  = notes.filter(n => n.columnId === 'longed');
+  const empty   = '<div class="sb-empty-hint">Aucun post-it</div>';
+  return `
+  <div class="sailboat-view">
+    <div class="sailboat-scene" style="background:#151e15">
+      <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="fl-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#12122a"/>
+            <stop offset="50%"  stop-color="#3a2a62"/>
+            <stop offset="80%"  stop-color="#8a4a38"/>
+            <stop offset="100%" stop-color="#c07848"/>
+          </linearGradient>
+          <linearGradient id="fl-mtn" x1="0.3" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#8090a0"/>
+            <stop offset="40%"  stop-color="#607080"/>
+            <stop offset="100%" stop-color="#404858"/>
+          </linearGradient>
+          <linearGradient id="fl-mtn-shadow" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#202530" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#202530" stop-opacity="0.65"/>
+          </linearGradient>
+          <linearGradient id="fl-snow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#f5f8ff"/>
+            <stop offset="100%" stop-color="#c8d0e0"/>
+          </linearGradient>
+          <linearGradient id="fl-ground" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#2a3a2a"/>
+            <stop offset="100%" stop-color="#151e15"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Sky -->
+        <rect width="1100" height="700" fill="url(#fl-sky)"/>
+        <!-- Stars (upper sky) -->
+        <circle cx="80"  cy="45"  r="1.5" fill="#fff" opacity="0.7"/>
+        <circle cx="180" cy="25"  r="1"   fill="#fff" opacity="0.5"/>
+        <circle cx="290" cy="58"  r="1.5" fill="#fff" opacity="0.6"/>
+        <circle cx="130" cy="88"  r="1"   fill="#fff" opacity="0.4"/>
+        <circle cx="420" cy="35"  r="1"   fill="#fff" opacity="0.5"/>
+        <circle cx="235" cy="110" r="1"   fill="#fff" opacity="0.35"/>
+
+        <!-- Distant right peak (Longed for) — misty, ethereal -->
+        <polygon points="1000,158 858,500 1100,500" fill="#7868a0" opacity="0.5"/>
+        <polygon points="1000,158 965,232 1035,232" fill="#c0b8d8" opacity="0.45"/>
+        <ellipse cx="995" cy="180" rx="118" ry="32" fill="rgba(190,175,220,0.28)"/>
+        <ellipse cx="968" cy="218" rx="82"  ry="22" fill="rgba(190,175,220,0.22)"/>
+        <ellipse cx="1025" cy="205" rx="72" ry="20" fill="rgba(190,175,220,0.2)"/>
+
+        <!-- Main mountain -->
+        <polygon points="550,78 202,500 862,500" fill="url(#fl-mtn)"/>
+        <polygon points="550,78 862,500 550,500" fill="url(#fl-mtn-shadow)"/>
+        <!-- Rock texture lines -->
+        <line x1="550" y1="180" x2="440" y2="420" stroke="rgba(0,0,0,0.08)" stroke-width="1.5"/>
+        <line x1="550" y1="200" x2="640" y2="420" stroke="rgba(0,0,0,0.06)" stroke-width="1.5"/>
+        <line x1="490" y1="280" x2="380" y2="450" stroke="rgba(0,0,0,0.05)" stroke-width="1"/>
+        <!-- Snow cap -->
+        <polygon points="550,78 476,218 624,218" fill="url(#fl-snow)"/>
+        <path d="M490 210 Q518 195 548 205 Q572 195 600 210" stroke="rgba(255,255,255,0.4)" stroke-width="1" fill="none"/>
+        <!-- Summit flag -->
+        <line x1="550" y1="78" x2="550" y2="38" stroke="#6b3a10" stroke-width="2.5"/>
+        <polygon points="550,38 580,47 550,56" fill="#FF8C00"/>
+
+        <!-- Ground floor -->
+        <rect x="0" y="500" width="1100" height="200" fill="url(#fl-ground)"/>
+
+        <!-- Base camp — Learned (bottom left) -->
+        <polygon points="155,467 112,500 198,500" fill="#c08040" opacity="0.92"/>
+        <polygon points="155,467 134,500 176,500" fill="#a06030" opacity="0.75"/>
+        <line x1="108" y1="500" x2="202" y2="500" stroke="#804820" stroke-width="2"/>
+        <line x1="112" y1="475" x2="85"  y2="495" stroke="#c09050" stroke-width="1" opacity="0.55"/>
+        <line x1="198" y1="475" x2="225" y2="495" stroke="#c09050" stroke-width="1" opacity="0.55"/>
+        <!-- Fire -->
+        <ellipse cx="238" cy="500" rx="14" ry="4" fill="rgba(180,80,0,0.3)"/>
+        <path d="M238 500 Q235 488 241 480 Q239 490 244 483 Q245 493 238 488" fill="#FF6B00" opacity="0.85"/>
+        <path d="M238 500 Q234 491 238 484 Q242 491 238 500" fill="#FFD700" opacity="0.72"/>
+        <!-- Learned label -->
+        <text x="148" y="452" font-family="Kalam" font-weight="700" font-size="17" fill="rgba(210,185,130,0.88)" text-anchor="middle">📚 Learned</text>
+
+        <!-- Crevasse — Lacked (bottom right, beside mountain base) -->
+        <polygon points="795,480 812,445 828,480" fill="#8898a8" opacity="0.75"/>
+        <polygon points="824,480 842,450 860,480" fill="#7888a0" opacity="0.7"/>
+        <polygon points="858,480 870,458 884,480" fill="#8898a8" opacity="0.65"/>
+        <path d="M840 476 L848 500 L844 500 L852 525" stroke="#101820" stroke-width="3" fill="none" opacity="0.9"/>
+        <path d="M850 472 L842 500" stroke="#101820" stroke-width="2" fill="none" opacity="0.6"/>
+        <text x="862" y="436" font-family="Kalam" font-size="15" fill="rgba(255,200,50,0.75)" text-anchor="middle">⚠</text>
+        <!-- Lacked label -->
+        <text x="862" y="422" font-family="Kalam" font-weight="700" font-size="17" fill="rgba(200,185,210,0.88)" text-anchor="middle">🕳️ Lacked</text>
+
+        <!-- Zone labels (background guides) -->
+        <text x="550" y="55"  font-family="Kalam" font-weight="700" font-size="20" fill="rgba(255,230,100,0.92)" text-anchor="middle">💛 Liked</text>
+        <text x="985" y="146" font-family="Kalam" font-weight="700" font-size="18" fill="rgba(200,185,230,0.88)" text-anchor="middle">✨ Longed for</text>
+      </svg>
+
+      <div class="sb-zone fl-zone-liked">${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div>
+      <div class="sb-zone fl-zone-longed">${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div>
+      <div class="sb-zone fl-zone-learned">${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div>
+      <div class="sb-zone fl-zone-lacked">${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div>
+    </div>
+  </div>`;
+}
+
 /* ============================= EXPORT ============================= */
 
 function buildMarkdown() {
@@ -1094,7 +1411,7 @@ function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal" onclick="if(!event.target.closest('[data-action=close-modal]'))event.stopPropagation()">
         <h3>Exporter la rétro</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
@@ -1113,7 +1430,17 @@ function render() {
     return;
   }
   if (view === "home") renderHome();
+  else if (view === "join") renderJoin();
   else renderBoard();
+  requestAnimationFrame(() => {
+    const scene = document.querySelector('.sailboat-scene');
+    if (!scene) return;
+    let maxBottom = 700;
+    scene.querySelectorAll('.sb-zone').forEach(z => {
+      maxBottom = Math.max(maxBottom, z.offsetTop + z.offsetHeight);
+    });
+    scene.style.minHeight = (maxBottom + 20) + 'px';
+  });
 }
 
 /* ============================= DRAG & DROP ============================= */
@@ -1196,11 +1523,25 @@ document.addEventListener('click', async (e) => {
       break;
     }
 
+    case 'join-room-url': {
+      const nameInput = document.getElementById('join-url-name');
+      const err = document.getElementById('join-url-error');
+      const name = nameInput.value.trim();
+      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      myName = name;
+      btn.disabled = true; btn.textContent = "Connexion…";
+      const ok = await enterRoom(urlCode);
+      if (!ok) { err.textContent = "Salle introuvable."; btn.disabled = false; btn.textContent = "Rejoindre la rétro →"; }
+      break;
+    }
+
     case 'leave-room': leaveRoom(); break;
 
-    case 'copy-code':
-      navigator.clipboard.writeText(roomCode).then(() => showToast("Code copié : " + roomCode));
+    case 'copy-code': {
+      const shareUrl = `${window.location.origin}/${roomCode}`;
+      navigator.clipboard.writeText(shareUrl).then(() => showToast("Lien copié !"));
       break;
+    }
 
     case 'set-tab': activeTab = btn.dataset.tab; render(); break;
 
@@ -1216,6 +1557,7 @@ document.addEventListener('click', async (e) => {
       if (!text) { composerOpenFor = null; render(); return; }
       composerOpenFor = null;
       await addNote(colId, text);
+      render();
       break;
     }
 
@@ -1292,9 +1634,46 @@ document.addEventListener('keydown', (e) => {
 
 /* ============================= BOOT ============================= */
 (async function boot() {
+  // Check if URL contains a room code (e.g. /AB3XZ)
+  const pathCode = window.location.pathname.replace(/^\//, '').toUpperCase();
+  const isCode = /^[A-Z0-9]{4,6}$/.test(pathCode);
+
   const savedRoom = localStorage.getItem('retrops_room');
   const savedName = localStorage.getItem('retrops_name');
-  if (savedRoom && savedName) {
+
+  if (isCode && savedRoom === pathCode && savedName) {
+    // Already in this room, rejoin directly
+    myName = savedName;
+    myColor = localStorage.getItem('retrops_color') || "note-1";
+    const ok = await enterRoom(pathCode);
+    if (!ok) {
+      localStorage.removeItem('retrops_room');
+      urlCode = pathCode;
+      view = "join";
+      render();
+    }
+  } else if (isCode) {
+    // URL has a room code — show join view
+    urlCode = pathCode;
+    loading = true; render();
+    try {
+      joinRoomData = await fetchRoom(urlCode);
+      loading = false;
+      if (joinRoomData) {
+        view = "join";
+        render();
+      } else {
+        showToast("Salle introuvable.");
+        history.replaceState(null, '', '/');
+        render();
+      }
+    } catch (e) {
+      loading = false;
+      showToast("Erreur réseau.");
+      render();
+    }
+  } else if (savedRoom && savedName) {
+    // No URL code but saved session — rejoin
     myName = savedName;
     myColor = localStorage.getItem('retrops_color') || "note-1";
     const ok = await enterRoom(savedRoom);
