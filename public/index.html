@@ -1599,9 +1599,8 @@ document.addEventListener('click', async (e) => {
 
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
-      activeTab = 'actions';
       await refreshRoom();
-      showToast("Action créée ↓");
+      showToast("Action créée ✓");
       break;
     }
 
