@@ -278,6 +278,29 @@
   }
   .todo-empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:30px 0;}
 
+  /* ---------- JOIN VIEW ---------- */
+  .join-view{
+    flex:1; display:flex; align-items:center; justify-content:center; padding:40px 20px;
+  }
+  .join-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:32px; width:100%; max-width:380px; display:flex; flex-direction:column; gap:16px;
+    text-align:center;
+  }
+  .join-card .brand{
+    font-family:'Kalam',cursive; font-weight:700; font-size:32px;
+    transform:rotate(-1.5deg); display:inline-block;
+  }
+  .join-card .brand .dot{color:var(--accent);}
+  .join-card .room-info{
+    background:var(--canvas-alt); border:1px dashed var(--line-strong); border-radius:10px;
+    padding:12px; display:flex; flex-direction:column; gap:4px;
+  }
+  .join-card .room-info .code{
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px; letter-spacing:0.14em;
+  }
+  .join-card .room-info .theme-name{font-size:13px; color:var(--ink-dim);}
+
   /* ---------- toast / modal ---------- */
   .toast{
     position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
@@ -490,7 +513,7 @@ function showToast(msg) {
 
 /* ============================= APP STATE ============================= */
 
-let view = "home";
+let view = "home"; // home | join | board
 let myName = localStorage.getItem('retrops_name') || "";
 let myColor = localStorage.getItem('retrops_color') || "note-1";
 let selectedTheme = "sstop";
@@ -505,6 +528,8 @@ let openMenus = {};
 let composerOpenFor = null;
 let roomListener = null; // SSE EventSource
 let loading = false;
+let urlCode = null; // room code extracted from URL
+let joinRoomData = null; // room metadata for join view
 
 /* ============================= FIREBASE SYNC ============================= */
 
@@ -660,6 +685,7 @@ async function enterRoom(code) {
     localStorage.setItem('retrops_name', myName);
     localStorage.setItem('retrops_room', roomCode);
     localStorage.setItem('retrops_color', myColor);
+    history.replaceState(null, '', '/' + roomCode);
     loading = false;
     render();
     startListening(roomCode);
@@ -686,6 +712,7 @@ function leaveRoom() {
   if (clockTimer) clearInterval(clockTimer);
   view = "home"; room = null; roomCode = null; presenceList = [];
   localStorage.removeItem('retrops_room');
+  history.replaceState(null, '', '/');
   render();
 }
 
@@ -750,6 +777,40 @@ function renderHome() {
           <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
           <div class="hint-error" id="join-error"></div>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================= RENDER: JOIN (URL LINK) ============================= */
+
+function renderJoin() {
+  const colorDots = NOTE_COLORS.map(c => {
+    const sel = myColor === c ? 'selected' : '';
+    const inkVar = `var(--${c}-ink)`;
+    return `<button class="color-dot ${sel}" style="background:var(--${c});color:${inkVar}" data-action="pick-color" data-color="${c}"></button>`;
+  }).join("");
+
+  const themeName = joinRoomData && THEMES[joinRoomData.theme] ? THEMES[joinRoomData.theme].name : '';
+
+  document.getElementById('app').innerHTML = `
+    <div class="join-view">
+      <div class="join-card">
+        <div class="brand">Rétrops<span class="dot">.</span></div>
+        <div class="room-info">
+          <div class="code">${urlCode}</div>
+          ${themeName ? `<div class="theme-name">${escapeHtml(themeName)}</div>` : ''}
+        </div>
+        <div class="field" style="text-align:left">
+          <label>Ton prénom</label>
+          <input id="join-url-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24" autofocus>
+        </div>
+        <div class="field" style="text-align:left">
+          <label>Ta couleur de post-it</label>
+          <div class="color-picker">${colorDots}</div>
+        </div>
+        <button class="btn btn-primary btn-block" data-action="join-room-url">Rejoindre la rétro →</button>
+        <div class="hint-error" id="join-url-error"></div>
       </div>
     </div>
   `;
@@ -902,7 +963,7 @@ function renderBoard() {
   document.getElementById('app').innerHTML = `
     <div class="board-view">
       <div class="topbar">
-        <div class="room-badge" data-action="copy-code" title="Copier le code">
+        <div class="room-badge" data-action="copy-code" title="Copier le lien de la salle">
           <div><div class="lbl">Salle</div><div class="code">${roomCode}</div></div>
         </div>
         <div class="theme-pill">${themeDef.name}</div>
@@ -1369,6 +1430,7 @@ function render() {
     return;
   }
   if (view === "home") renderHome();
+  else if (view === "join") renderJoin();
   else renderBoard();
   requestAnimationFrame(() => {
     const scene = document.querySelector('.sailboat-scene');
@@ -1461,11 +1523,25 @@ document.addEventListener('click', async (e) => {
       break;
     }
 
+    case 'join-room-url': {
+      const nameInput = document.getElementById('join-url-name');
+      const err = document.getElementById('join-url-error');
+      const name = nameInput.value.trim();
+      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      myName = name;
+      btn.disabled = true; btn.textContent = "Connexion…";
+      const ok = await enterRoom(urlCode);
+      if (!ok) { err.textContent = "Salle introuvable."; btn.disabled = false; btn.textContent = "Rejoindre la rétro →"; }
+      break;
+    }
+
     case 'leave-room': leaveRoom(); break;
 
-    case 'copy-code':
-      navigator.clipboard.writeText(roomCode).then(() => showToast("Code copié : " + roomCode));
+    case 'copy-code': {
+      const shareUrl = `${window.location.origin}/${roomCode}`;
+      navigator.clipboard.writeText(shareUrl).then(() => showToast("Lien copié !"));
       break;
+    }
 
     case 'set-tab': activeTab = btn.dataset.tab; render(); break;
 
@@ -1558,9 +1634,46 @@ document.addEventListener('keydown', (e) => {
 
 /* ============================= BOOT ============================= */
 (async function boot() {
+  // Check if URL contains a room code (e.g. /AB3XZ)
+  const pathCode = window.location.pathname.replace(/^\//, '').toUpperCase();
+  const isCode = /^[A-Z0-9]{4,6}$/.test(pathCode);
+
   const savedRoom = localStorage.getItem('retrops_room');
   const savedName = localStorage.getItem('retrops_name');
-  if (savedRoom && savedName) {
+
+  if (isCode && savedRoom === pathCode && savedName) {
+    // Already in this room, rejoin directly
+    myName = savedName;
+    myColor = localStorage.getItem('retrops_color') || "note-1";
+    const ok = await enterRoom(pathCode);
+    if (!ok) {
+      localStorage.removeItem('retrops_room');
+      urlCode = pathCode;
+      view = "join";
+      render();
+    }
+  } else if (isCode) {
+    // URL has a room code — show join view
+    urlCode = pathCode;
+    loading = true; render();
+    try {
+      joinRoomData = await fetchRoom(urlCode);
+      loading = false;
+      if (joinRoomData) {
+        view = "join";
+        render();
+      } else {
+        showToast("Salle introuvable.");
+        history.replaceState(null, '', '/');
+        render();
+      }
+    } catch (e) {
+      loading = false;
+      showToast("Erreur réseau.");
+      render();
+    }
+  } else if (savedRoom && savedName) {
+    // No URL code but saved session — rejoin
     myName = savedName;
     myColor = localStorage.getItem('retrops_color') || "note-1";
     const ok = await enterRoom(savedRoom);
