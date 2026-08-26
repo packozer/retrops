@@ -588,17 +588,16 @@ function syncRoom() {
   syncTimeout = setTimeout(async () => {
     syncTimeout = null;
     try {
-      // Skip re-render if user is actively typing in composer or todo input
+      // Skip re-render if user is actively typing or modal is open
       const activeEl = document.activeElement;
       const isTyping = activeEl && (activeEl.id === 'composer-input' || activeEl.id === 'new-todo-input' || activeEl.id === 'join-url-name');
+      const modalOpen = document.querySelector('.modal-bg');
       
       const data = await fetchRoom(roomCode);
       if (data) {
         room = roomToArrays(data);
         
-        if (isTyping) {
-          // Don't re-render, just update data silently
-          // UI will catch up on next render (when user submits, switches tab, etc.)
+        if (isTyping || modalOpen) {
           return;
         }
         render();
