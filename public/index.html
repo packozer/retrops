@@ -915,6 +915,7 @@ function noteHtml(n) {
         <div class="note-menu ${menuOpen}">
           <button class="icon-btn" data-action="toggle-note-menu" data-id="${n.id}">⋯</button>
           <div class="pop">
+            <button data-action="edit-note" data-id="${n.id}">✏️ Modifier</button>
             <button data-action="to-todo" data-id="${n.id}">📌 Créer une action</button>
             <div class="sep"></div>
             ${moveOptions}
@@ -1387,8 +1388,8 @@ function buildMarkdown() {
 function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
-    <div class="modal-bg" data-action="close-modal">
-      <div class="modal" onclick="if(!event.target.closest('[data-action=close-modal]'))event.stopPropagation()">
+    <div class="modal-bg" data-action="close-modal-bg">
+      <div class="modal" onclick="event.stopPropagation()">
         <h3>Exporter la rétro</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
@@ -1399,7 +1400,22 @@ function openExportModal() {
     </div>`;
 }
 
-/* ============================= RENDER DISPATCH ============================= */
+function openEditModal(noteId) {
+  const note = (room.notes || []).find(n => n.id === noteId);
+  if (!note) return;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-bg" data-action="close-modal-bg">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h3>Modifier le post-it</h3>
+        <textarea id="edit-note-text" style="min-height:120px; font-family:'Kalam',cursive; font-size:15px;">${escapeHtml(note.text)}</textarea>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" data-action="close-modal">Annuler</button>
+          <button class="btn btn-primary" data-action="save-edit" data-id="${noteId}">Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => { const ta = document.getElementById('edit-note-text'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }, 0);
+}
 
 function render() {
   if (loading) {
@@ -1573,6 +1589,17 @@ document.addEventListener('click', async (e) => {
 
     case 'open-export': openExportModal(); break;
     case 'close-modal': document.getElementById('modal-root').innerHTML = ''; break;
+    case 'close-modal-bg': document.getElementById('modal-root').innerHTML = ''; break;
+    case 'edit-note': openEditModal(btn.dataset.id); break;
+    case 'save-edit': {
+      const ta = document.getElementById('edit-note-text');
+      const text = ta.value.trim();
+      if (!text) break;
+      await fb.update(`rooms/${roomCode}/notes/${btn.dataset.id}`, { text });
+      document.getElementById('modal-root').innerHTML = '';
+      await refreshRoom();
+      break;
+    }
     case 'copy-export': {
       const ta = document.getElementById('export-text');
       navigator.clipboard.writeText(ta.value).then(() => showToast("Rétro copiée dans le presse-papiers ✓"));
