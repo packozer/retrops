@@ -336,16 +336,28 @@
 
   /* ---------- SAILBOAT VISUAL ---------- */
   .sailboat-view{flex:1; overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:20px;}
-  .sailboat-scene{position:relative; width:1100px; min-height:700px; flex-shrink:0;}
-  .sailboat-svg{width:100%; height:auto;}
-  .sb-zone{position:absolute; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; padding:8px;}
-  .sb-zone-wind{top:20px; left:50px; width:300px;}
-  .sb-zone-island{top:30px; right:30px; width:280px;}
-  .sb-zone-anchor{bottom:30px; left:340px; width:300px;}
-  .sb-zone-rocks{bottom:40px; right:60px; width:280px;}
+  .visual-container{width:100%; max-width:1100px; flex-shrink:0;}
+  .visual-svg{width:100%; height:auto; display:block; border-radius:14px 14px 0 0;}
+  .visual-zones{
+    display:grid; gap:1px; background:var(--line);
+    border-radius:0 0 14px 14px; overflow:hidden;
+  }
+  .visual-zones.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .visual-zones.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .vz{
+    background:rgba(0,0,0,0.35); padding:14px; display:flex; flex-direction:column; gap:10px;
+    min-height:120px;
+  }
+  .vz-header{
+    font-family:'Kalam',cursive; font-weight:700; font-size:15px;
+    color:rgba(255,255,255,0.85); display:flex; align-items:center; gap:6px;
+    padding-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.15);
+    margin-bottom:4px;
+  }
+  .vz-notes{display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;}
   .sb-note{
     padding:8px 10px; border-radius:3px 8px 8px 8px; font-family:'Kalam',cursive; font-size:12px;
-    line-height:1.3; max-width:140px; box-shadow:0 3px 8px rgba(0,0,0,0.3);
+    line-height:1.3; max-width:160px; box-shadow:0 3px 8px rgba(0,0,0,0.3);
     transform:rotate(var(--rot, 0deg)); word-break:break-word;
     position:relative;
   }
@@ -356,30 +368,19 @@
   }
   .sb-note .sb-votes{font-family:'Manrope',sans-serif; font-size:9px; font-weight:800; opacity:0.7; margin-top:4px;}
   .sb-note .sb-author{font-family:'Manrope',sans-serif; font-size:9px; font-weight:700; opacity:0.6; margin-top:2px;}
-  .sb-zone-label{
-    position:absolute; font-family:'Kalam',cursive; font-weight:700; font-size:16px;
-    color:rgba(255,255,255,0.85); text-shadow:0 2px 6px rgba(0,0,0,0.5);
-    pointer-events:none;
-  }
-  .sb-label-wind{top:2px; left:55px;}
-  .sb-label-island{top:12px; right:35px;}
-  .sb-label-anchor{bottom:210px; left:345px;}
-  .sb-label-rocks{bottom:220px; right:65px;}
   .sb-empty-hint{
     font-family:'Manrope',sans-serif; font-size:11px; color:rgba(255,255,255,0.4);
     font-style:italic; padding:4px;
   }
 
-  /* ---------- MAD/SAD/GLAD VISUAL ---------- */
-  .msg-zone-mad{top:220px; left:10px;  width:330px;}
-  .msg-zone-sad{top:220px; left:380px; width:340px;}
-  .msg-zone-glad{top:220px; left:745px; width:340px;}
-
-  /* ---------- 4 L'S VISUAL ---------- */
-  .fl-zone-liked{top:60px; left:360px; width:380px;}
-  .fl-zone-longed{top:50px; right:10px; width:270px;}
-  .fl-zone-learned{top:430px; left:10px; width:280px;}
-  .fl-zone-lacked{top:430px; left:760px; width:300px;}
+  @media (max-width:900px){
+    .visual-zones.cols-4{grid-template-columns:1fr 1fr;}
+    .visual-zones.cols-3{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    .visual-zones.cols-3{grid-template-columns:1fr;}
+    .visual-zones.cols-4{grid-template-columns:1fr;}
+  }
 
   @media (max-width:640px){
     .home-cards{flex-direction:column; align-items:stretch;}
@@ -1041,8 +1042,8 @@ function sailboatViewHtml() {
 
   return `
   <div class="sailboat-view">
-    <div class="sailboat-scene" style="background:#0b2e4a">
-      <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+    <div class="visual-container" style="background:#0b2e4a">
+      <svg class="visual-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
         <!-- Sky gradient -->
         <defs>
           <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -1142,18 +1143,11 @@ function sailboatViewHtml() {
         <text x="830" y="445" font-family="Kalam" font-weight="700" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">🪨 Rochers</text>
       </svg>
 
-      <!-- Post-it zones overlaid -->
-      <div class="sb-zone sb-zone-wind">
-        ${wind.length ? wind.map(sbNoteHtml).join('') : empty}
-      </div>
-      <div class="sb-zone sb-zone-island">
-        ${island.length ? island.map(sbNoteHtml).join('') : empty}
-      </div>
-      <div class="sb-zone sb-zone-anchor">
-        ${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}
-      </div>
-      <div class="sb-zone sb-zone-rocks">
-        ${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}
+      <div class="visual-zones cols-4">
+        <div class="vz"><div class="vz-header">⛵ Vent</div><div class="vz-notes">${wind.length ? wind.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">🏝️ Île</div><div class="vz-notes">${island.length ? island.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">⚓ Ancre</div><div class="vz-notes">${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">🪨 Rochers</div><div class="vz-notes">${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}</div></div>
       </div>
     </div>
   </div>`;
@@ -1169,8 +1163,8 @@ function msgViewHtml() {
   const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
   return `
   <div class="sailboat-view">
-    <div class="sailboat-scene" style="background:#3a5a30">
-      <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+    <div class="visual-container" style="background:#3a5a30">
+      <svg class="visual-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="msg-mad-bg" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#2d0808"/>
@@ -1282,9 +1276,11 @@ function msgViewHtml() {
         <path d="M995 530 Q999 518 1003 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
       </svg>
 
-      <div class="sb-zone msg-zone-mad">${mad.length ? mad.map(sbNoteHtml).join('') : empty}</div>
-      <div class="sb-zone msg-zone-sad">${sad.length ? sad.map(sbNoteHtml).join('') : empty}</div>
-      <div class="sb-zone msg-zone-glad">${glad.length ? glad.map(sbNoteHtml).join('') : empty}</div>
+      <div class="visual-zones cols-3">
+        <div class="vz" style="background:rgba(107,18,18,0.5)"><div class="vz-header">😠 Mad</div><div class="vz-notes">${mad.length ? mad.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz" style="background:rgba(84,104,120,0.5)"><div class="vz-header">😢 Sad</div><div class="vz-notes">${sad.length ? sad.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz" style="background:rgba(91,163,217,0.3)"><div class="vz-header">😊 Glad</div><div class="vz-notes">${glad.length ? glad.map(sbNoteHtml).join('') : empty}</div></div>
+      </div>
     </div>
   </div>`;
 }
@@ -1300,8 +1296,8 @@ function fourlsViewHtml() {
   const empty   = '<div class="sb-empty-hint">Aucun post-it</div>';
   return `
   <div class="sailboat-view">
-    <div class="sailboat-scene" style="background:#151e15">
-      <svg class="sailboat-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+    <div class="visual-container" style="background:#151e15">
+      <svg class="visual-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="fl-sky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stop-color="#12122a"/>
@@ -1390,10 +1386,12 @@ function fourlsViewHtml() {
         <text x="985" y="146" font-family="Kalam" font-weight="700" font-size="18" fill="rgba(200,185,230,0.88)" text-anchor="middle">✨ Longed for</text>
       </svg>
 
-      <div class="sb-zone fl-zone-liked">${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div>
-      <div class="sb-zone fl-zone-longed">${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div>
-      <div class="sb-zone fl-zone-learned">${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div>
-      <div class="sb-zone fl-zone-lacked">${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div>
+      <div class="visual-zones cols-4">
+        <div class="vz"><div class="vz-header">💛 Liked</div><div class="vz-notes">${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">📚 Learned</div><div class="vz-notes">${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">🕳️ Lacked</div><div class="vz-notes">${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div></div>
+        <div class="vz"><div class="vz-header">✨ Longed for</div><div class="vz-notes">${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div></div>
+      </div>
     </div>
   </div>`;
 }
@@ -1454,7 +1452,7 @@ function render() {
   else if (view === "join") renderJoin();
   else renderBoard();
   requestAnimationFrame(() => {
-    const scene = document.querySelector('.sailboat-scene');
+    const scene = document.querySelector('.visual-container');
     if (!scene) return;
     let maxBottom = 700;
     scene.querySelectorAll('.sb-zone').forEach(z => {
@@ -1599,9 +1597,8 @@ document.addEventListener('click', async (e) => {
 
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
-      activeTab = 'actions';
       await refreshRoom();
-      showToast("Action créée ↓");
+      showToast("Action créée ✓");
       break;
     }
 
