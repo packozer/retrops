@@ -563,8 +563,25 @@ function roomToArrays(data) {
 
 function startListening(code) {
   if (roomListener) roomListener.close();
-  roomListener = fb.listen(`rooms/${code}`, (event) => {
-    fb.get(`rooms/${code}`).then(data => {
+  
+  // Try SSE for instant updates
+  try {
+    roomListener = fb.listen(`rooms/${code}`, (event) => {
+      syncRoom();
+    });
+  } catch(e) {
+    roomListener = null;
+  }
+}
+
+// Debounced room sync to avoid hammering Firebase
+let syncTimeout = null;
+function syncRoom() {
+  if (syncTimeout) return; // already scheduled
+  syncTimeout = setTimeout(async () => {
+    syncTimeout = null;
+    try {
+      const data = await fetchRoom(roomCode);
       if (data) {
         const ta = document.getElementById('composer-input');
         const draft = ta ? ta.value : '';
@@ -575,8 +592,8 @@ function startListening(code) {
           if (ta2) ta2.value = draft;
         }
       }
-    }).catch(() => { });
-  });
+    } catch(e) {}
+  }, 300);
 }
 
 async function sendHeartbeat() {
@@ -694,9 +711,12 @@ async function enterRoom(code) {
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     if (pollTimer) clearInterval(pollTimer);
     if (clockTimer) clearInterval(clockTimer);
+    if (window._roomPoll) clearInterval(window._roomPoll);
     heartbeatTimer = setInterval(sendHeartbeat, 9000);
     pollTimer = setInterval(pollPresence, 5000);
     clockTimer = setInterval(() => { if (view === 'board') renderTimerOnly(); }, 1000);
+    // Fallback polling every 3s in case SSE doesn't work
+    window._roomPoll = setInterval(syncRoom, 3000);
     return true;
   } catch (e) {
     loading = false; render();
@@ -710,6 +730,7 @@ function leaveRoom() {
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   if (pollTimer) clearInterval(pollTimer);
   if (clockTimer) clearInterval(clockTimer);
+  if (window._roomPoll) clearInterval(window._roomPoll);
   view = "home"; room = null; roomCode = null; presenceList = [];
   localStorage.removeItem('retrops_room');
   window.location.hash = '';
