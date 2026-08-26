@@ -361,6 +361,13 @@
     font-family:'Manrope',sans-serif; font-size:11px; color:rgba(255,255,255,0.4);
     font-style:italic; padding:4px;
   }
+  .ov-label{
+    width:100%; font-family:'Kalam',cursive; font-weight:700; font-size:15px;
+    color:rgba(255,255,255,0.9); text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    margin-bottom:4px; flex-shrink:0;
+    background:rgba(0,0,0,0.3); border-radius:8px; padding:3px 10px;
+    backdrop-filter:blur(4px);
+  }
 
   /* Sailboat zones - wider to give scaled-down notes room */
   .ov-wind{top:2%; left:1%; width:38%; height:50%;}
@@ -1150,10 +1157,10 @@ function sailboatViewHtml() {
         <text x="830" y="445" font-family="Kalam" font-weight="700" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">🪨 Rochers</text>
       </svg>
 
-      <div class="ov-zone ov-wind" style="${zoneStyle(wind.length)}">${wind.length ? wind.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-island" style="${zoneStyle(island.length)}">${island.length ? island.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-anchor" style="${zoneStyle(anchor.length)}">${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-rocks" style="${zoneStyle(rocks.length)}">${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-wind" style="${zoneStyle(wind.length)}"><div class="ov-label">⛵ Vent</div>${wind.length ? wind.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-island" style="${zoneStyle(island.length)}"><div class="ov-label">🏝️ Île</div>${island.length ? island.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-anchor" style="${zoneStyle(anchor.length)}"><div class="ov-label">⚓ Ancre</div>${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-rocks" style="${zoneStyle(rocks.length)}"><div class="ov-label">🪨 Rochers</div>${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}</div>
     </div>
   </div>`;
 }
@@ -1336,10 +1343,10 @@ function fourlsViewHtml() {
         <text x="985" y="146" font-family="Kalam" font-weight="700" font-size="18" fill="rgba(200,185,230,0.88)" text-anchor="middle">✨ Longed for</text>
       </svg>
 
-      <div class="ov-zone ov-liked" style="${zoneStyle(liked.length)}">${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-longed" style="${zoneStyle(longed.length)}">${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-learned" style="${zoneStyle(learned.length)}">${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div>
-      <div class="ov-zone ov-lacked" style="${zoneStyle(lacked.length)}">${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-liked" style="${zoneStyle(liked.length)}"><div class="ov-label">💛 Liked</div>${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-longed" style="${zoneStyle(longed.length)}"><div class="ov-label">✨ Longed for</div>${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-learned" style="${zoneStyle(learned.length)}"><div class="ov-label">📚 Learned</div>${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-lacked" style="${zoneStyle(lacked.length)}"><div class="ov-label">🕳️ Lacked</div>${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div>
     </div>
   </div>`;
 }
