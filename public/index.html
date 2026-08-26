@@ -685,7 +685,7 @@ async function enterRoom(code) {
     localStorage.setItem('retrops_name', myName);
     localStorage.setItem('retrops_room', roomCode);
     localStorage.setItem('retrops_color', myColor);
-    history.replaceState(null, '', '/' + roomCode);
+    window.location.hash = roomCode;
     loading = false;
     render();
     startListening(roomCode);
@@ -712,7 +712,7 @@ function leaveRoom() {
   if (clockTimer) clearInterval(clockTimer);
   view = "home"; room = null; roomCode = null; presenceList = [];
   localStorage.removeItem('retrops_room');
-  history.replaceState(null, '', '/');
+  window.location.hash = '';
   render();
 }
 
@@ -1538,7 +1538,7 @@ document.addEventListener('click', async (e) => {
     case 'leave-room': leaveRoom(); break;
 
     case 'copy-code': {
-      const shareUrl = `${window.location.origin}/${roomCode}`;
+      const shareUrl = `${window.location.origin}/#${roomCode}`;
       navigator.clipboard.writeText(shareUrl).then(() => showToast("Lien copié !"));
       break;
     }
@@ -1634,27 +1634,27 @@ document.addEventListener('keydown', (e) => {
 
 /* ============================= BOOT ============================= */
 (async function boot() {
-  // Check if URL contains a room code (e.g. /AB3XZ)
-  const pathCode = window.location.pathname.replace(/^\//, '').toUpperCase();
-  const isCode = /^[A-Z0-9]{4,6}$/.test(pathCode);
+  // Check if URL hash contains a room code (e.g. #AB3XZ)
+  const hashCode = window.location.hash.replace(/^#/, '').toUpperCase();
+  const isCode = /^[A-Z0-9]{4,6}$/.test(hashCode);
 
   const savedRoom = localStorage.getItem('retrops_room');
   const savedName = localStorage.getItem('retrops_name');
 
-  if (isCode && savedRoom === pathCode && savedName) {
+  if (isCode && savedRoom === hashCode && savedName) {
     // Already in this room, rejoin directly
     myName = savedName;
     myColor = localStorage.getItem('retrops_color') || "note-1";
-    const ok = await enterRoom(pathCode);
+    const ok = await enterRoom(hashCode);
     if (!ok) {
       localStorage.removeItem('retrops_room');
-      urlCode = pathCode;
+      urlCode = hashCode;
       view = "join";
       render();
     }
   } else if (isCode) {
-    // URL has a room code — show join view
-    urlCode = pathCode;
+    // Hash has a room code — show join view
+    urlCode = hashCode;
     loading = true; render();
     try {
       joinRoomData = await fetchRoom(urlCode);
@@ -1664,7 +1664,7 @@ document.addEventListener('keydown', (e) => {
         render();
       } else {
         showToast("Salle introuvable.");
-        history.replaceState(null, '', '/');
+        window.location.hash = '';
         render();
       }
     } catch (e) {
@@ -1673,7 +1673,7 @@ document.addEventListener('keydown', (e) => {
       render();
     }
   } else if (savedRoom && savedName) {
-    // No URL code but saved session — rejoin
+    // No hash code but saved session — rejoin
     myName = savedName;
     myColor = localStorage.getItem('retrops_color') || "note-1";
     const ok = await enterRoom(savedRoom);
