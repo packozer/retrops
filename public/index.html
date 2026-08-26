@@ -1389,7 +1389,7 @@ function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal-bg">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal">
         <h3>Exporter la rétro</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
@@ -1405,7 +1405,7 @@ function openEditModal(noteId) {
   if (!note) return;
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal-bg">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal">
         <h3>Modifier le post-it</h3>
         <textarea id="edit-note-text" style="min-height:120px; font-family:'Kalam',cursive; font-size:15px;">${escapeHtml(note.text)}</textarea>
         <div class="modal-actions">
@@ -1589,7 +1589,13 @@ document.addEventListener('click', async (e) => {
 
     case 'open-export': openExportModal(); break;
     case 'close-modal': document.getElementById('modal-root').innerHTML = ''; break;
-    case 'close-modal-bg': document.getElementById('modal-root').innerHTML = ''; break;
+    case 'close-modal-bg': {
+      // Only close if click is directly on the backdrop, not on modal content inside it
+      if (e.target.classList.contains('modal-bg')) {
+        document.getElementById('modal-root').innerHTML = '';
+      }
+      break;
+    }
     case 'edit-note': openEditModal(btn.dataset.id); break;
     case 'save-edit': {
       const ta = document.getElementById('edit-note-text');
