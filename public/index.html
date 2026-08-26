@@ -588,16 +588,20 @@ function syncRoom() {
   syncTimeout = setTimeout(async () => {
     syncTimeout = null;
     try {
+      // Skip re-render if user is actively typing in composer or todo input
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (activeEl.id === 'composer-input' || activeEl.id === 'new-todo-input' || activeEl.id === 'join-url-name');
+      
       const data = await fetchRoom(roomCode);
       if (data) {
-        const ta = document.getElementById('composer-input');
-        const draft = ta ? ta.value : '';
         room = roomToArrays(data);
-        render();
-        if (draft && composerOpenFor) {
-          const ta2 = document.getElementById('composer-input');
-          if (ta2) ta2.value = draft;
+        
+        if (isTyping) {
+          // Don't re-render, just update data silently
+          // UI will catch up on next render (when user submits, switches tab, etc.)
+          return;
         }
+        render();
       }
     } catch(e) {}
   }, 300);
