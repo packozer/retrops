@@ -313,13 +313,13 @@
 
   /* ---------- SAILBOAT VISUAL ---------- */
   .sailboat-view{flex:1; overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:20px;}
-  .sailboat-scene{position:relative; width:1100px; min-height:700px; flex-shrink:0; overflow:hidden;}
+  .sailboat-scene{position:relative; width:1100px; min-height:700px; flex-shrink:0;}
   .sailboat-svg{width:100%; height:auto;}
-  .sb-zone{position:absolute; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; padding:8px; overflow-y:auto;}
-  .sb-zone-wind{top:20px; left:50px; width:300px; max-height:200px;}
-  .sb-zone-island{top:30px; right:30px; width:280px; max-height:200px;}
-  .sb-zone-anchor{bottom:30px; left:340px; width:300px; max-height:180px;}
-  .sb-zone-rocks{bottom:40px; right:60px; width:280px; max-height:180px;}
+  .sb-zone{position:absolute; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; padding:8px;}
+  .sb-zone-wind{top:20px; left:50px; width:300px;}
+  .sb-zone-island{top:30px; right:30px; width:280px;}
+  .sb-zone-anchor{bottom:30px; left:340px; width:300px;}
+  .sb-zone-rocks{bottom:40px; right:60px; width:280px;}
   .sb-note{
     padding:8px 10px; border-radius:3px 8px 8px 8px; font-family:'Kalam',cursive; font-size:12px;
     line-height:1.3; max-width:140px; box-shadow:0 3px 8px rgba(0,0,0,0.3);
@@ -348,15 +348,15 @@
   }
 
   /* ---------- MAD/SAD/GLAD VISUAL ---------- */
-  .msg-zone-mad{top:220px; left:10px;  width:330px; max-height:290px;}
-  .msg-zone-sad{top:220px; left:380px; width:340px; max-height:290px;}
-  .msg-zone-glad{top:220px; left:745px; width:340px; max-height:290px;}
+  .msg-zone-mad{top:220px; left:10px;  width:330px;}
+  .msg-zone-sad{top:220px; left:380px; width:340px;}
+  .msg-zone-glad{top:220px; left:745px; width:340px;}
 
   /* ---------- 4 L'S VISUAL ---------- */
-  .fl-zone-liked{top:60px; left:360px; width:380px; max-height:200px;}
-  .fl-zone-longed{top:50px; right:10px; width:270px; max-height:220px;}
-  .fl-zone-learned{top:430px; left:10px; width:280px; max-height:240px;}
-  .fl-zone-lacked{top:430px; left:760px; width:300px; max-height:240px;}
+  .fl-zone-liked{top:60px; left:360px; width:380px;}
+  .fl-zone-longed{top:50px; right:10px; width:270px;}
+  .fl-zone-learned{top:430px; left:10px; width:280px;}
+  .fl-zone-lacked{top:430px; left:760px; width:300px;}
 
   @media (max-width:640px){
     .home-cards{flex-direction:column; align-items:stretch;}
@@ -1370,6 +1370,15 @@ function render() {
   }
   if (view === "home") renderHome();
   else renderBoard();
+  requestAnimationFrame(() => {
+    const scene = document.querySelector('.sailboat-scene');
+    if (!scene) return;
+    let maxBottom = 700;
+    scene.querySelectorAll('.sb-zone').forEach(z => {
+      maxBottom = Math.max(maxBottom, z.offsetTop + z.offsetHeight);
+    });
+    scene.style.minHeight = (maxBottom + 20) + 'px';
+  });
 }
 
 /* ============================= DRAG & DROP ============================= */
