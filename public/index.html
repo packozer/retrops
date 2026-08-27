@@ -3,7 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Rétrops — Rétrospectives d'équipe</title>
+<title>Rétrops — Free Online Retrospective Tool | Outil de rétrospective gratuit</title>
+<meta name="description" content="Run sprint retrospectives in seconds. No signup, no trial, no friction. Create a room, share the link, start collecting feedback with your team. Free forever.">
+<meta name="keywords" content="retrospective, sprint retrospective, scrum, agile, retro tool, free retrospective, online retrospective, team retrospective, start stop continue, mad sad glad, sailboat retrospective, 4Ls retrospective, post-it, postit, rétrospective, outil rétro gratuit">
+<meta name="author" content="Rétrops">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://retrops.vercel.app/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rétrops — Free Sprint Retrospective Tool">
+<meta property="og:description" content="No signup. No trial. Open the link, pick a name, start your retro. Free forever.">
+<meta property="og:url" content="https://retrops.vercel.app/">
+<meta property="og:site_name" content="Rétrops">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rétrops — Free Sprint Retrospective Tool">
+<meta name="twitter:description" content="No signup. No trial. Open the link, start your retro.">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Rétrops",
+  "url": "https://retrops.vercel.app/",
+  "description": "Free online sprint retrospective tool. No signup required. Real-time collaboration with post-its, voting, and action plans.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "inLanguage": ["fr", "en"]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Manrope:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -336,30 +371,19 @@
 
   /* ---------- SAILBOAT VISUAL ---------- */
   .sailboat-view{flex:1; overflow:auto; display:flex; justify-content:center; align-items:flex-start; padding:20px;}
-  .visual-container{width:100%; max-width:1100px; flex-shrink:0;}
-  .visual-svg{width:100%; height:auto; display:block; border-radius:14px 14px 0 0;}
-  .visual-zones{
-    display:grid; gap:1px; background:var(--line);
-    border-radius:0 0 14px 14px; overflow:hidden;
+  .visual-container{width:100%; max-width:1100px; flex-shrink:0; position:relative;}
+  .visual-svg{width:100%; height:auto; display:block; border-radius:14px;}
+
+  /* Overlay zones on the SVG */
+  .ov-zone{
+    position:absolute; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; padding:6px;
+    overflow:hidden;
   }
-  .visual-zones.cols-3{grid-template-columns:1fr 1fr 1fr;}
-  .visual-zones.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
-  .vz{
-    background:rgba(0,0,0,0.35); padding:14px; display:flex; flex-direction:column; gap:10px;
-    min-height:120px;
-  }
-  .vz-header{
-    font-family:'Kalam',cursive; font-weight:700; font-size:15px;
-    color:rgba(255,255,255,0.85); display:flex; align-items:center; gap:6px;
-    padding-bottom:8px; border-bottom:1px dashed rgba(255,255,255,0.15);
-    margin-bottom:4px;
-  }
-  .vz-notes{display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;}
   .sb-note{
     padding:8px 10px; border-radius:3px 8px 8px 8px; font-family:'Kalam',cursive; font-size:12px;
-    line-height:1.3; max-width:160px; box-shadow:0 3px 8px rgba(0,0,0,0.3);
+    line-height:1.3; box-shadow:0 3px 8px rgba(0,0,0,0.3);
     transform:rotate(var(--rot, 0deg)); word-break:break-word;
-    position:relative;
+    position:relative; max-width:160px;
   }
   .sb-note .sb-pin{
     position:absolute; top:-5px; left:10px; width:8px; height:8px; border-radius:50%;
@@ -372,14 +396,31 @@
     font-family:'Manrope',sans-serif; font-size:11px; color:rgba(255,255,255,0.4);
     font-style:italic; padding:4px;
   }
+  .ov-label{
+    width:100%; font-family:'Kalam',cursive; font-weight:700; font-size:15px;
+    color:rgba(255,255,255,0.9); text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    margin-bottom:4px; flex-shrink:0;
+    background:rgba(0,0,0,0.3); border-radius:8px; padding:3px 10px;
+    backdrop-filter:blur(4px);
+  }
+
+  /* Sailboat zones - wider to give scaled-down notes room */
+  .ov-wind{top:2%; left:1%; width:38%; height:50%;}
+  .ov-island{top:2%; right:1%; width:32%; height:50%;}
+  .ov-anchor{bottom:1%; left:20%; width:38%; height:44%;}
+  .ov-rocks{bottom:1%; right:1%; width:32%; height:44%;}
+
+  /* 4L's zones */
+  .ov-liked{top:3%; left:22%; width:45%; height:55%;}
+  .ov-longed{top:3%; right:1%; width:30%; height:55%;}
+  .ov-learned{bottom:2%; left:1%; width:35%; height:42%;}
+  .ov-lacked{bottom:2%; right:1%; width:35%; height:42%;}
 
   @media (max-width:900px){
-    .visual-zones.cols-4{grid-template-columns:1fr 1fr;}
-    .visual-zones.cols-3{grid-template-columns:1fr;}
+    .ov-zone .sb-note{max-width:110px; font-size:10px;}
   }
   @media (max-width:640px){
-    .visual-zones.cols-3{grid-template-columns:1fr;}
-    .visual-zones.cols-4{grid-template-columns:1fr;}
+    .ov-zone .sb-note{max-width:90px; font-size:9px; padding:4px 6px;}
   }
 
   @media (max-width:640px){
@@ -389,6 +430,17 @@
     .board{padding:12px; gap:12px;}
     .column{min-width:250px; max-width:250px;}
   }
+
+  .lang-toggle{
+    position:fixed; bottom:16px; right:16px; z-index:80;
+    background:var(--panel); border:1px solid var(--line-strong); border-radius:20px;
+    display:flex; overflow:hidden;
+  }
+  .lang-btn{
+    padding:6px 12px; font-size:12px; font-weight:700; background:none; border:none;
+    color:var(--ink-faint); cursor:pointer;
+  }
+  .lang-btn.active{background:var(--accent); color:var(--accent-ink);}
 </style>
 </head>
 <body>
@@ -446,48 +498,124 @@ const fb = {
   }
 };
 
-/* ============================= CONFIG / DATA ============================= */
+/* ============================= i18n ============================= */
 
-const THEMES = {
-  sstop: {
-    name: "Start / Stop / Continue",
-    desc: "Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
-    columns: [
-      { id: "start", label: "Start", icon: "🌱", tape: "var(--tape-4)" },
-      { id: "stop", label: "Stop", icon: "🛑", tape: "var(--tape-3)" },
-      { id: "continue", label: "Continue", icon: "🔁", tape: "var(--tape-2)" }
-    ]
+let lang = localStorage.getItem('retrops_lang') || (navigator.language.startsWith('fr') ? 'fr' : 'en');
+
+const i18n = {
+  fr: {
+    heroSub: "Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.",
+    createTitle: "Créer une rétro", createSub: "Choisis un template et lance la session",
+    joinTitle: "Rejoindre une rétro", joinSub: "Ton équipe t'a envoyé un code",
+    yourName: "Ton prénom", yourColor: "Ta couleur de post-it",
+    namePlaceholder: "Ex. Camille", codePlaceholder: "AB3XZ",
+    chooseTemplate: "Choisis un template de rétro", roomCode: "Code de la salle",
+    createBtn: "Créer la salle →", joinBtn: "Rejoindre →", joinRetroBtn: "${t("joinRetroBtn")}",
+    creating: "${t("creating")}", connecting: "${t("connecting")}",
+    errName: "${t("errName")}", errCode: "${t("errCode")}",
+    errCreate: "${t("errCreate")}", errNotFound: "${t("errNotFound")}",
+    errNotFoundShort: "${t("errNotFoundShort")}", errNetwork: "${t("errNetwork")}",
+    board: "Tableau", actions: "Actions", export: "Exporter", quit: "Quitter", room: "Salle",
+    addPostit: "${t("addPostit")}", cancel: "Annuler", add: "Ajouter",
+    writeIdea: "${t("writeIdea")}",
+    actionPlan: "Plan d'action", actionSub: "${t("actionSub")}",
+    newAction: "${t("newAction")}", unassigned: "Non assigné",
+    noActions: "${t("noActions")}",
+    createAction: "${t("createAction")}", editNote: "${t("editNote")}", deleteNote: "${t("deleteNote")}",
+    actionCreated: "${t("actionCreated")}", linkCopied: "${t("linkCopied")}",
+    exportTitle: "Exporter la rétro", close: "Fermer", copy: "Copier",
+    retroCopied: "${t("retroCopied")}",
+    editTitle: "Modifier le post-it", save: "Enregistrer",
+    stop: "Arrêter", noPostit: "${t("noPostit")}",
+    copyLink: "Copier le lien de la salle",
+    sstopName: "Start / Stop / Continue", sstopDesc: "Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
+    msgName: "Mad / Sad / Glad", msgDesc: "L'humeur de l'équipe depuis le dernier sprint.",
+    fourlsName: "4 L's", fourlsDesc: "Liked, Learned, Lacked, Longed for.",
+    sailboatName: "Sailboat", sailboatDesc: "Vent, ancre, rochers et l'île à atteindre.",
+    viewSailboat: "${t("viewSailboat")}", viewWeather: "${t("viewWeather")}", viewMountain: "${t("viewMountain")}",
   },
-  msg: {
-    name: "Mad / Sad / Glad",
-    desc: "L'humeur de l'équipe depuis le dernier sprint.",
-    columns: [
-      { id: "mad", label: "Mad", icon: "😠", tape: "var(--tape-3)" },
-      { id: "sad", label: "Sad", icon: "😢", tape: "var(--tape-2)" },
-      { id: "glad", label: "Glad", icon: "😊", tape: "var(--tape-4)" }
-    ]
-  },
-  fourls: {
-    name: "4 L's",
-    desc: "Liked, Learned, Lacked, Longed for.",
-    columns: [
-      { id: "liked", label: "Liked", icon: "💛", tape: "var(--tape-1)" },
-      { id: "learned", label: "Learned", icon: "📚", tape: "var(--tape-2)" },
-      { id: "lacked", label: "Lacked", icon: "🕳️", tape: "var(--tape-3)" },
-      { id: "longed", label: "Longed for", icon: "✨", tape: "var(--tape-5)" }
-    ]
-  },
-  sailboat: {
-    name: "Sailboat",
-    desc: "Vent, ancre, rochers et l'île à atteindre.",
-    columns: [
-      { id: "wind", label: "Vent", icon: "⛵", tape: "var(--tape-2)" },
-      { id: "anchor", label: "Ancre", icon: "⚓", tape: "var(--tape-3)" },
-      { id: "rocks", label: "Rochers", icon: "🪨", tape: "var(--tape-1)" },
-      { id: "island", label: "Île", icon: "🏝️", tape: "var(--tape-4)" }
-    ]
+  en: {
+    heroSub: "Online team retrospectives — post-its, voting, action plans. Everyone joins live from their own device.",
+    createTitle: "Create a retro", createSub: "Pick a template and start the session",
+    joinTitle: "Join a retro", joinSub: "Your team sent you a code",
+    yourName: "Your name", yourColor: "Your post-it color",
+    namePlaceholder: "e.g. Alex", codePlaceholder: "AB3XZ",
+    chooseTemplate: "Choose a retro template", roomCode: "Room code",
+    createBtn: "Create room →", joinBtn: "Join →", joinRetroBtn: "Join the retro →",
+    creating: "Creating…", connecting: "Connecting…",
+    errName: "Enter your name to continue.", errCode: "Enter the room code.",
+    errCreate: "Could not create the room. Try again.", errNotFound: "Room not found — check the code.",
+    errNotFoundShort: "Room not found.", errNetwork: "Network error — check your connection.",
+    board: "Board", actions: "Actions", export: "Export", quit: "Leave", room: "Room",
+    addPostit: "+ Add a post-it", cancel: "Cancel", add: "Add",
+    writeIdea: "Write your idea…",
+    actionPlan: "Action plan", actionSub: "Concrete actions coming out of this retro.",
+    newAction: "New action item…", unassigned: "Unassigned",
+    noActions: "No actions yet. Click on a post-it → \"Create action\", or add one directly here.",
+    createAction: "📌 Create action", editNote: "✏️ Edit", deleteNote: "🗑 Delete",
+    actionCreated: "Action created ✓", linkCopied: "Link copied!",
+    exportTitle: "Export retro", close: "Close", copy: "Copy",
+    retroCopied: "Retro copied to clipboard ✓",
+    editTitle: "Edit post-it", save: "Save",
+    stop: "Stop", noPostit: "No post-its",
+    copyLink: "Copy room link",
+    sstopName: "Start / Stop / Continue", sstopDesc: "What to start, stop, and keep doing.",
+    msgName: "Mad / Sad / Glad", msgDesc: "Team mood since last sprint.",
+    fourlsName: "4 L's", fourlsDesc: "Liked, Learned, Lacked, Longed for.",
+    sailboatName: "Sailboat", sailboatDesc: "Wind, anchor, rocks, and the island to reach.",
+    viewSailboat: "⛵ Sailboat View", viewWeather: "🌦 Weather View", viewMountain: "🏔️ Expedition View",
   }
 };
+
+function t(key) { return (i18n[lang] || i18n.en)[key] || key; }
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('retrops_lang', l);
+  document.documentElement.lang = l;
+  render();
+}
+
+/* ============================= CONFIG / DATA ============================= */
+
+function getThemes() {
+  return {
+    sstop: {
+      name: t('sstopName'), desc: t('sstopDesc'),
+      columns: [
+        { id: "start", label: "Start", icon: "🌱", tape: "var(--tape-4)" },
+        { id: "stop", label: "Stop", icon: "🛑", tape: "var(--tape-3)" },
+        { id: "continue", label: "Continue", icon: "🔁", tape: "var(--tape-2)" }
+      ]
+    },
+    msg: {
+      name: t('msgName'), desc: t('msgDesc'),
+      columns: [
+        { id: "mad", label: "Mad", icon: "😠", tape: "var(--tape-3)" },
+        { id: "sad", label: "Sad", icon: "😢", tape: "var(--tape-2)" },
+        { id: "glad", label: "Glad", icon: "😊", tape: "var(--tape-4)" }
+      ]
+    },
+    fourls: {
+      name: t('fourlsName'), desc: t('fourlsDesc'),
+      columns: [
+        { id: "liked", label: "Liked", icon: "💛", tape: "var(--tape-1)" },
+        { id: "learned", label: "Learned", icon: "📚", tape: "var(--tape-2)" },
+        { id: "lacked", label: "Lacked", icon: "🕳️", tape: "var(--tape-3)" },
+        { id: "longed", label: "Longed for", icon: "✨", tape: "var(--tape-5)" }
+      ]
+    },
+    sailboat: {
+      name: t('sailboatName'), desc: t('sailboatDesc'),
+      columns: [
+        { id: "wind", label: lang==='fr'?"Vent":"Wind", icon: "⛵", tape: "var(--tape-2)" },
+        { id: "anchor", label: lang==='fr'?"Ancre":"Anchor", icon: "⚓", tape: "var(--tape-3)" },
+        { id: "rocks", label: lang==='fr'?"Rochers":"Rocks", icon: "🪨", tape: "var(--tape-1)" },
+        { id: "island", label: lang==='fr'?"Île":"Island", icon: "🏝️", tape: "var(--tape-4)" }
+      ]
+    }
+  };
+}
 
 const NOTE_COLORS = ["note-1", "note-2", "note-3", "note-4", "note-5", "note-6"];
 
@@ -582,16 +710,19 @@ function syncRoom() {
   syncTimeout = setTimeout(async () => {
     syncTimeout = null;
     try {
+      // Skip re-render if user is actively typing or modal is open
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (activeEl.id === 'composer-input' || activeEl.id === 'new-todo-input' || activeEl.id === 'join-url-name');
+      const modalOpen = document.querySelector('.modal-bg');
+      
       const data = await fetchRoom(roomCode);
       if (data) {
-        const ta = document.getElementById('composer-input');
-        const draft = ta ? ta.value : '';
         room = roomToArrays(data);
-        render();
-        if (draft && composerOpenFor) {
-          const ta2 = document.getElementById('composer-input');
-          if (ta2) ta2.value = draft;
+        
+        if (isTyping || modalOpen) {
+          return;
         }
+        render();
       }
     } catch(e) {}
   }, 300);
@@ -696,7 +827,7 @@ async function enterRoom(code) {
   loading = true; render();
   try {
     const data = await fetchRoom(roomCode);
-    if (!data) { loading = false; render(); showToast("Salle introuvable — vérifie le code."); return false; }
+    if (!data) { loading = false; render(); showToast("${t("errNotFound")}"); return false; }
     room = roomToArrays(data);
     view = "board";
     activeTab = "board";
@@ -721,7 +852,7 @@ async function enterRoom(code) {
     return true;
   } catch (e) {
     loading = false; render();
-    showToast("Erreur réseau — vérifie ta connexion.");
+    showToast("${t("errNetwork")}");
     return false;
   }
 }
@@ -741,14 +872,15 @@ function leaveRoom() {
 /* ============================= RENDER: HOME ============================= */
 
 function renderHome() {
-  const themeCards = Object.keys(THEMES).map(key => {
-    const t = THEMES[key];
+  const themes = getThemes();
+  const themeCards = Object.keys(themes).map(key => {
+    const th = themes[key];
     const sel = selectedTheme === key ? "selected" : "";
-    const strips = t.columns.map(c => `<i style="background:${c.tape}"></i>`).join("");
+    const strips = th.columns.map(c => `<i style="background:${c.tape}"></i>`).join("");
     return `<button type="button" class="theme-card ${sel}" data-action="pick-theme" data-theme="${key}">
       <div class="theme-strip">${strips}</div>
-      <div class="t-name">${escapeHtml(t.name)}</div>
-      <div class="t-desc">${escapeHtml(t.desc)}</div>
+      <div class="t-name">${escapeHtml(th.name)}</div>
+      <div class="t-desc">${escapeHtml(th.desc)}</div>
     </button>`;
   }).join("");
 
@@ -761,42 +893,42 @@ function renderHome() {
   document.getElementById('app').innerHTML = `
     <div class="home">
       <div class="home-hero">
-        <div class="brand">RétrOps<span class="dot">.</span></div>
-        <p>Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.</p>
+        <div class="brand">Rétrops<span class="dot">.</span></div>
+        <p>${t('heroSub')}</p>
       </div>
       <div class="home-cards">
         <div class="home-card">
-          <h2>Créer une rétro<span>Choisis un template et lance la session</span></h2>
+          <h2>${t('createTitle')}<span>${t('createSub')}</span></h2>
           <div class="field">
-            <label>Ton prénom</label>
-            <input id="create-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+            <label>${t('yourName')}</label>
+            <input id="create-name" type="text" placeholder="${t('namePlaceholder')}" value="${escapeHtml(myName)}" maxlength="24">
           </div>
           <div class="field">
-            <label>Ta couleur de post-it</label>
-            <div class="color-picker" id="create-color-picker">${colorDots}</div>
+            <label>${t('yourColor')}</label>
+            <div class="color-picker">${colorDots}</div>
           </div>
           <div class="field">
-            <label>Choisis un template de rétro</label>
+            <label>${t('chooseTemplate')}</label>
             <div class="theme-grid">${themeCards}</div>
           </div>
-          <button class="btn btn-primary btn-block" data-action="create-room">Créer la salle →</button>
+          <button class="btn btn-primary btn-block" data-action="create-room">${t('createBtn')}</button>
           <div class="hint-error" id="create-error"></div>
         </div>
         <div class="home-card">
-          <h2>Rejoindre une rétro<span>Ton équipe t'a envoyé un code</span></h2>
+          <h2>${t('joinTitle')}<span>${t('joinSub')}</span></h2>
           <div class="field">
-            <label>Ton prénom</label>
-            <input id="join-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+            <label>${t('yourName')}</label>
+            <input id="join-name" type="text" placeholder="${t('namePlaceholder')}" value="${escapeHtml(myName)}" maxlength="24">
           </div>
           <div class="field">
-            <label>Ta couleur de post-it</label>
-            <div class="color-picker" id="join-color-picker">${colorDots}</div>
+            <label>${t('yourColor')}</label>
+            <div class="color-picker">${colorDots}</div>
           </div>
           <div class="field">
-            <label>Code de la salle</label>
-            <input id="join-code" class="code" type="text" placeholder="AB3XZ" maxlength="6">
+            <label>${t('roomCode')}</label>
+            <input id="join-code" class="code" type="text" placeholder="${t('codePlaceholder')}" maxlength="6">
           </div>
-          <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
+          <button class="btn btn-primary btn-block" data-action="join-room">${t('joinBtn')}</button>
           <div class="hint-error" id="join-error"></div>
         </div>
       </div>
@@ -813,7 +945,7 @@ function renderJoin() {
     return `<button class="color-dot ${sel}" style="background:var(--${c});color:${inkVar}" data-action="pick-color" data-color="${c}"></button>`;
   }).join("");
 
-  const themeName = joinRoomData && THEMES[joinRoomData.theme] ? THEMES[joinRoomData.theme].name : '';
+  const themeName = joinRoomData && getThemes()[joinRoomData.theme] ? getThemes()[joinRoomData.theme].name : '';
 
   document.getElementById('app').innerHTML = `
     <div class="join-view">
@@ -831,7 +963,7 @@ function renderJoin() {
           <label>Ta couleur de post-it</label>
           <div class="color-picker">${colorDots}</div>
         </div>
-        <button class="btn btn-primary btn-block" data-action="join-room-url">Rejoindre la rétro →</button>
+        <button class="btn btn-primary btn-block" data-action="join-room-url">${t("joinRetroBtn")}</button>
         <div class="hint-error" id="join-url-error"></div>
       </div>
     </div>
@@ -891,7 +1023,7 @@ function noteHtml(n) {
   const myVote = votes.includes(myName);
   const isMine = n.author === myName;
   const menuOpen = openMenus['note:' + n.id] ? 'open' : '';
-  const cols = THEMES[room.theme].columns;
+  const cols = getThemes()[room.theme].columns;
   const moveOptions = cols.filter(c => c.id !== n.columnId).map(c =>
     `<button data-action="move-note" data-id="${n.id}" data-col="${c.id}">→ ${escapeHtml(c.label)}</button>`
   ).join("");
@@ -906,10 +1038,11 @@ function noteHtml(n) {
         <div class="note-menu ${menuOpen}">
           <button class="icon-btn" data-action="toggle-note-menu" data-id="${n.id}">⋯</button>
           <div class="pop">
-            <button data-action="to-todo" data-id="${n.id}">📌 Créer une action</button>
+            <button data-action="edit-note" data-id="${n.id}">${t("editNote")}</button>
+            <button data-action="to-todo" data-id="${n.id}">${t("createAction")}</button>
             <div class="sep"></div>
             ${moveOptions}
-            ${isMine ? `<div class="sep"></div><button class="danger" data-action="delete-note" data-id="${n.id}">🗑 Supprimer</button>` : ""}
+            ${isMine ? `<div class="sep"></div><button class="danger" data-action="delete-note" data-id="${n.id}">${t("deleteNote")}</button>` : ""}
           </div>
         </div>
       </div>
@@ -934,13 +1067,13 @@ function columnHtml(col) {
     <div class="column-add">
       ${composerOpen ? `
         <div class="composer">
-          <textarea id="composer-input" placeholder="Écris ton idée…" autofocus></textarea>
+          <textarea id="composer-input" placeholder="${t("writeIdea")}" autofocus></textarea>
           <div class="composer-actions">
-            <button class="btn btn-ghost btn-sm" data-action="cancel-add" data-col="${col.id}">Annuler</button>
-            <button class="btn btn-primary btn-sm" data-action="submit-add" data-col="${col.id}">Ajouter</button>
+            <button class="btn btn-ghost btn-sm" data-action="cancel-add" data-col="${col.id}">${t("cancel")}</button>
+            <button class="btn btn-primary btn-sm" data-action="submit-add" data-col="${col.id}">${t("add")}</button>
           </div>
         </div>
-      ` : `<button class="add-note-btn" data-action="open-add" data-col="${col.id}">+ Ajouter un post-it</button>`}
+      ` : `<button class="add-note-btn" data-action="open-add" data-col="${col.id}">${t("addPostit")}</button>`}
     </div>
   </div>`;
 }
@@ -949,7 +1082,7 @@ function actionsViewHtml() {
   const todos = (room.todos || []).slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.order - b.order);
   const authors = allAuthors();
   const rows = todos.map(t => {
-    const opts = ['<option value="">Non assigné</option>']
+    const opts = ['<option value="">${t("unassigned")}</option>']
       .concat(authors.map(a => `<option value="${escapeHtml(a)}" ${t.assignee === a ? 'selected' : ''}>${escapeHtml(a)}</option>`)).join("");
     return `
     <div class="todo-row ${t.done ? 'done' : ''}">
@@ -963,21 +1096,21 @@ function actionsViewHtml() {
   return `
   <div class="actions-view">
     <div class="actions-inner">
-      <h2>Plan d'action</h2>
-      <div class="sub">Les actions concrètes qui sortent de cette rétro.</div>
+      <h2>${t("actionPlan")}</h2>
+      <div class="sub">${t("actionSub")}</div>
       <div class="todo-composer">
-        <input id="new-todo-input" type="text" placeholder="Nouvelle action à mener…" maxlength="140">
-        <button class="btn btn-primary btn-sm" data-action="add-todo">Ajouter</button>
+        <input id="new-todo-input" type="text" placeholder="${t("newAction")}" maxlength="140">
+        <button class="btn btn-primary btn-sm" data-action="add-todo">${t("add")}</button>
       </div>
       <div class="todo-list">
-        ${todos.length ? rows : `<div class="todo-empty">Aucune action pour l'instant. Clique sur un post-it → « Créer une action », ou ajoute-en une directement ici.</div>`}
+        ${todos.length ? rows : `<div class="todo-empty">${t("noActions")}</div>`}
       </div>
     </div>
   </div>`;
 }
 
 function renderBoard() {
-  const themeDef = THEMES[room.theme];
+  const themeDef = getThemes()[room.theme];
   const timerOpen = openMenus['timer'] ? 'open' : '';
   const timerActive = room.timerEndsAt && room.timerEndsAt > 0;
   const remain = timerActive ? room.timerEndsAt - Date.now() : null;
@@ -985,7 +1118,7 @@ function renderBoard() {
   document.getElementById('app').innerHTML = `
     <div class="board-view">
       <div class="topbar">
-        <div class="room-badge" data-action="copy-code" title="Copier le lien de la salle">
+        <div class="room-badge" data-action="copy-code" title="${t('copyLink')}">
           <div><div class="lbl">Salle</div><div class="code">${roomCode}</div></div>
         </div>
         <div class="theme-pill">${themeDef.name}</div>
@@ -999,16 +1132,16 @@ function renderBoard() {
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="5">5 min</button>
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="10">10 min</button>
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="15">15 min</button>
-            <button class="btn btn-ghost btn-sm btn-block" data-action="clear-timer">Arrêter</button>
+            <button class="btn btn-ghost btn-sm btn-block" data-action="clear-timer">${t("stop")}</button>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" data-action="open-export">Exporter</button>
-        <button class="btn btn-ghost btn-sm" data-action="leave-room">Quitter</button>
+        <button class="btn btn-ghost btn-sm" data-action="open-export">${t("export")}</button>
+        <button class="btn btn-ghost btn-sm" data-action="leave-room">${t("quit")}</button>
       </div>
       <div class="tabs">
-        <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">Tableau</button>
-        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛵ Vue Sailboat</button>` : room.theme === 'msg' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">🌦 Vue Météo</button>` : room.theme === 'fourls' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛰ Vue Montagne</button>` : ''}
-        <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">Actions ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
+        <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">${t("board")}</button>
+        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">${t("viewSailboat")}</button>` : room.theme === 'msg' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">${t("viewWeather")}</button>` : room.theme === 'fourls' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛰ Vue Montagne</button>` : ''}
+        <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">${t('actions')} ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
       </div>
       ${activeTab === 'board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : activeTab === 'visual' ? (room.theme === 'msg' ? msgViewHtml() : room.theme === 'fourls' ? fourlsViewHtml() : sailboatViewHtml()) : actionsViewHtml()}
     </div>
@@ -1018,6 +1151,14 @@ function renderBoard() {
 }
 
 /* ============================= SAILBOAT VISUAL ============================= */
+
+function zoneStyle(count) {
+  if (count <= 4) return '';
+  if (count <= 8) return 'transform:scale(0.82);transform-origin:top left;';
+  if (count <= 12) return 'transform:scale(0.68);transform-origin:top left;';
+  if (count <= 18) return 'transform:scale(0.55);transform-origin:top left;';
+  return 'transform:scale(0.45);transform-origin:top left;';
+}
 
 function sbNoteHtml(n) {
   const rot = rotForId(n.id);
@@ -1038,7 +1179,7 @@ function sailboatViewHtml() {
   const anchor = notes.filter(n => n.columnId === 'anchor');
   const rocks = notes.filter(n => n.columnId === 'rocks');
   const island = notes.filter(n => n.columnId === 'island');
-  const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty = '<div class="sb-empty-hint">${t("noPostit")}</div>';
 
   return `
   <div class="sailboat-view">
@@ -1143,12 +1284,10 @@ function sailboatViewHtml() {
         <text x="830" y="445" font-family="Kalam" font-weight="700" font-size="16" fill="rgba(255,255,255,0.6)" text-anchor="middle">🪨 Rochers</text>
       </svg>
 
-      <div class="visual-zones cols-4">
-        <div class="vz"><div class="vz-header">⛵ Vent</div><div class="vz-notes">${wind.length ? wind.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">🏝️ Île</div><div class="vz-notes">${island.length ? island.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">⚓ Ancre</div><div class="vz-notes">${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">🪨 Rochers</div><div class="vz-notes">${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}</div></div>
-      </div>
+      <div class="ov-zone ov-wind" style="${zoneStyle(wind.length)}"><div class="ov-label">⛵ Vent</div>${wind.length ? wind.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-island" style="${zoneStyle(island.length)}"><div class="ov-label">🏝️ Île</div>${island.length ? island.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-anchor" style="${zoneStyle(anchor.length)}"><div class="ov-label">⚓ Ancre</div>${anchor.length ? anchor.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-rocks" style="${zoneStyle(rocks.length)}"><div class="ov-label">🪨 Rochers</div>${rocks.length ? rocks.map(sbNoteHtml).join('') : empty}</div>
     </div>
   </div>`;
 }
@@ -1160,127 +1299,72 @@ function msgViewHtml() {
   const mad   = notes.filter(n => n.columnId === 'mad');
   const sad   = notes.filter(n => n.columnId === 'sad');
   const glad  = notes.filter(n => n.columnId === 'glad');
-  const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty = '<div class="sb-empty-hint">${t("noPostit")}</div>';
   return `
   <div class="sailboat-view">
-    <div class="visual-container" style="background:#3a5a30">
-      <svg class="visual-svg" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="msg-mad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#2d0808"/>
-            <stop offset="60%"  stop-color="#6b1212"/>
-            <stop offset="100%" stop-color="#9c2a2a"/>
-          </linearGradient>
-          <linearGradient id="msg-sad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#28384a"/>
-            <stop offset="100%" stop-color="#546878"/>
-          </linearGradient>
-          <linearGradient id="msg-glad-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#5ba3d9"/>
-            <stop offset="100%" stop-color="#b8dff0"/>
-          </linearGradient>
-          <linearGradient id="msg-ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stop-color="#5a7a4a"/>
-            <stop offset="100%" stop-color="#3a5a30"/>
-          </linearGradient>
-        </defs>
+    <div class="visual-container" style="display:flex; width:100%; max-width:1100px; border-radius:14px; overflow:hidden;">
 
-        <!-- Three sky sections -->
-        <rect x="0"   y="0" width="367" height="700" fill="url(#msg-mad-bg)"/>
-        <rect x="367" y="0" width="366" height="700" fill="url(#msg-sad-bg)"/>
-        <rect x="733" y="0" width="367" height="700" fill="url(#msg-glad-bg)"/>
-        <!-- Section dividers -->
-        <line x1="367" y1="0" x2="367" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-        <line x1="733" y1="0" x2="733" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
-        <!-- Section labels -->
-        <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,100,100,0.9)" text-anchor="middle">😠 Mad</text>
-        <text x="550" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(160,200,230,0.9)" text-anchor="middle">😢 Sad</text>
-        <text x="917" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,220,50,0.95)" text-anchor="middle">😊 Glad</text>
-
-        <!-- MAD: storm clouds + lightning + heavy rain -->
-        <ellipse cx="100" cy="105" rx="115" ry="48" fill="#0d0d0d" opacity="0.95"/>
-        <ellipse cx="210" cy="82"  rx="100" ry="42" fill="#1a1a1a" opacity="0.9"/>
-        <ellipse cx="318" cy="115" rx="85"  ry="40" fill="#111"    opacity="0.88"/>
-        <ellipse cx="165" cy="100" rx="78"  ry="33" fill="#222"    opacity="0.8"/>
-        <ellipse cx="183" cy="148" rx="130" ry="18" fill="#9b1c1c" opacity="0.35"/>
-        <path d="M218 155 L200 218 L216 218 L190 290 L244 218 L228 218 L252 155 Z" fill="#ffe033" opacity="0.95"/>
-        <line x1="55"  y1="153" x2="43"  y2="213" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
-        <line x1="85"  y1="157" x2="73"  y2="217" stroke="rgba(120,150,200,0.5)"  stroke-width="1.5"/>
-        <line x1="115" y1="153" x2="103" y2="213" stroke="rgba(120,150,200,0.45)" stroke-width="1.5"/>
-        <line x1="295" y1="153" x2="283" y2="213" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
-        <line x1="325" y1="157" x2="313" y2="217" stroke="rgba(120,150,200,0.4)"  stroke-width="1.5"/>
-        <line x1="352" y1="153" x2="340" y2="213" stroke="rgba(120,150,200,0.35)" stroke-width="1.5"/>
-        <!-- house mad -->
-        <rect x="65"  y="468" width="84" height="62" fill="#3a2020" opacity="0.85"/>
-        <polygon points="65,468 107,438 149,468" fill="#4a2828" opacity="0.85"/>
-        <rect x="90"  y="490" width="20" height="20" fill="#100808" opacity="0.95"/>
-        <rect x="116" y="490" width="20" height="20" fill="#7a1515" opacity="0.6"/>
-
-        <!-- SAD: grey clouds + moderate rain + puddle -->
-        <ellipse cx="478" cy="96"  rx="95" ry="38" fill="#5a6878" opacity="0.9"/>
-        <ellipse cx="562" cy="76"  rx="82" ry="33" fill="#6a788a" opacity="0.85"/>
-        <ellipse cx="650" cy="105" rx="72" ry="30" fill="#5a6878" opacity="0.8"/>
-        <ellipse cx="722" cy="90"  rx="60" ry="27" fill="#6a788a" opacity="0.75"/>
-        <line x1="458" y1="146" x2="450" y2="196" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="488" y1="140" x2="480" y2="190" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="518" y1="143" x2="510" y2="193" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="550" y1="145" x2="542" y2="195" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
-        <line x1="580" y1="140" x2="572" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="610" y1="143" x2="602" y2="193" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
-        <line x1="640" y1="140" x2="632" y2="190" stroke="rgba(140,175,215,0.5)"  stroke-width="1.5"/>
-        <line x1="670" y1="145" x2="662" y2="195" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
-        <line x1="700" y1="140" x2="692" y2="190" stroke="rgba(140,175,215,0.4)"  stroke-width="1.5"/>
-        <ellipse cx="552" cy="537" rx="85" ry="14" fill="rgba(100,140,180,0.35)"/>
-        <!-- house sad -->
-        <rect x="452" y="475" width="78" height="57" fill="#48596a" opacity="0.85"/>
-        <polygon points="452,475 491,448 530,475" fill="#586a7a" opacity="0.85"/>
-        <rect x="477" y="493" width="17" height="17" fill="#38485a" opacity="0.9"/>
-
-        <!-- GLAD: sun + rays + rainbow + fluffy clouds + cheerful house -->
-        <circle cx="912" cy="88" r="60" fill="#FFD700" opacity="0.12"/>
-        <circle cx="912" cy="88" r="38" fill="#FFD700" opacity="0.95"/>
-        <line x1="912" y1="38"  x2="912" y2="22"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="950" y1="50"  x2="961" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="962" y1="88"  x2="978" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="950" y1="126" x2="961" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="912" y1="138" x2="912" y2="154" stroke="#FFD700" stroke-width="3" opacity="0.7"/>
-        <line x1="874" y1="126" x2="863" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="862" y1="88"  x2="846" y2="88"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <line x1="874" y1="50"  x2="863" y2="39"  stroke="#FFD700" stroke-width="3" opacity="0.75"/>
-        <path d="M738 440 Q870 258 1100 430" stroke="rgba(255,0,0,0.4)"    stroke-width="4" fill="none"/>
-        <path d="M742 436 Q870 267 1096 426" stroke="rgba(255,140,0,0.4)"  stroke-width="4" fill="none"/>
-        <path d="M746 432 Q870 276 1092 422" stroke="rgba(255,255,0,0.4)"  stroke-width="4" fill="none"/>
-        <path d="M750 428 Q870 285 1088 418" stroke="rgba(0,200,80,0.4)"   stroke-width="4" fill="none"/>
-        <path d="M754 424 Q870 294 1084 414" stroke="rgba(0,100,255,0.35)" stroke-width="4" fill="none"/>
-        <ellipse cx="790" cy="155" rx="58" ry="24" fill="white" opacity="0.88"/>
-        <ellipse cx="822" cy="140" rx="44" ry="20" fill="white" opacity="0.92"/>
-        <ellipse cx="1058" cy="168" rx="50" ry="22" fill="white" opacity="0.82"/>
-        <!-- house glad -->
-        <rect x="820" y="462" width="82" height="68" fill="#e8d5a0" opacity="0.92"/>
-        <polygon points="820,462 861,432 902,462" fill="#d47a50" opacity="0.92"/>
-        <rect x="843" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
-        <rect x="868" y="480" width="18" height="18" fill="#ffe490" opacity="0.95"/>
-        <circle cx="810" cy="529" r="5" fill="#FF9999" opacity="0.85"/>
-        <line x1="810" y1="534" x2="810" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
-        <circle cx="825" cy="527" r="5" fill="#FFB3FF" opacity="0.85"/>
-        <line x1="825" y1="532" x2="825" y2="548" stroke="#5a9a4a" stroke-width="1.5"/>
-
-        <!-- Shared ground -->
-        <rect x="0" y="530" width="1100" height="170" fill="url(#msg-ground)"/>
-        <path d="M42  530 Q46  518 50  530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M120 530 Q124 520 128 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M245 530 Q249 518 253 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M420 530 Q424 520 428 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M600 530 Q604 518 608 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M810 530 Q814 520 818 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-        <path d="M995 530 Q999 518 1003 530" stroke="#6a9a5a" stroke-width="1.5" fill="none"/>
-      </svg>
-
-      <div class="visual-zones cols-3">
-        <div class="vz" style="background:rgba(107,18,18,0.5)"><div class="vz-header">😠 Mad</div><div class="vz-notes">${mad.length ? mad.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz" style="background:rgba(84,104,120,0.5)"><div class="vz-header">😢 Sad</div><div class="vz-notes">${sad.length ? sad.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz" style="background:rgba(91,163,217,0.3)"><div class="vz-header">😊 Glad</div><div class="vz-notes">${glad.length ? glad.map(sbNoteHtml).join('') : empty}</div></div>
+      <!-- MAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #2d0808, #6b1212 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px;">
+        <svg viewBox="0 0 367 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <ellipse cx="100" cy="105" rx="115" ry="48" fill="#0d0d0d" opacity="0.95"/>
+          <ellipse cx="210" cy="82" rx="100" ry="42" fill="#1a1a1a" opacity="0.9"/>
+          <ellipse cx="318" cy="115" rx="85" ry="40" fill="#111" opacity="0.88"/>
+          <ellipse cx="165" cy="100" rx="78" ry="33" fill="#222" opacity="0.8"/>
+          <path d="M218 155 L200 218 L216 218 L190 290 L244 218 L228 218 L252 155 Z" fill="#ffe033" opacity="0.95"/>
+          <line x1="55" y1="153" x2="43" y2="213" stroke="rgba(120,150,200,0.5)" stroke-width="1.5"/>
+          <line x1="85" y1="157" x2="73" y2="217" stroke="rgba(120,150,200,0.5)" stroke-width="1.5"/>
+          <line x1="115" y1="153" x2="103" y2="213" stroke="rgba(120,150,200,0.45)" stroke-width="1.5"/>
+          <line x1="295" y1="153" x2="283" y2="213" stroke="rgba(120,150,200,0.4)" stroke-width="1.5"/>
+          <line x1="325" y1="157" x2="313" y2="217" stroke="rgba(120,150,200,0.4)" stroke-width="1.5"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,100,100,0.9)" text-anchor="middle">😠 Mad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${mad.length ? mad.map(sbNoteHtml).join('') : empty}
+        </div>
       </div>
+
+      <!-- SAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #28384a, #546878 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px; border-left:1px solid rgba(255,255,255,0.08); border-right:1px solid rgba(255,255,255,0.08);">
+        <svg viewBox="0 0 366 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <ellipse cx="150" cy="96" rx="95" ry="38" fill="#5a6878" opacity="0.9"/>
+          <ellipse cx="220" cy="76" rx="82" ry="33" fill="#6a788a" opacity="0.85"/>
+          <ellipse cx="300" cy="105" rx="72" ry="30" fill="#5a6878" opacity="0.8"/>
+          <line x1="100" y1="146" x2="92" y2="196" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="140" y1="140" x2="132" y2="190" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="180" y1="143" x2="172" y2="193" stroke="rgba(140,175,215,0.5)" stroke-width="1.5"/>
+          <line x1="220" y1="145" x2="212" y2="195" stroke="rgba(140,175,215,0.55)" stroke-width="1.5"/>
+          <line x1="260" y1="140" x2="252" y2="190" stroke="rgba(140,175,215,0.5)" stroke-width="1.5"/>
+          <line x1="300" y1="143" x2="292" y2="193" stroke="rgba(140,175,215,0.45)" stroke-width="1.5"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(160,200,230,0.9)" text-anchor="middle">😢 Sad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${sad.length ? sad.map(sbNoteHtml).join('') : empty}
+        </div>
+      </div>
+
+      <!-- GLAD column -->
+      <div style="flex:1; background:linear-gradient(to bottom, #5ba3d9, #b8dff0 40%, #5a7a4a 92%, #3a5a30); display:flex; flex-direction:column; position:relative; min-height:500px;">
+        <svg viewBox="0 0 367 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; flex-shrink:0;">
+          <circle cx="200" cy="88" r="60" fill="#FFD700" opacity="0.12"/>
+          <circle cx="200" cy="88" r="38" fill="#FFD700" opacity="0.95"/>
+          <line x1="200" y1="38" x2="200" y2="22" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="238" y1="50" x2="249" y2="39" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="250" y1="88" x2="266" y2="88" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="238" y1="126" x2="249" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="200" y1="138" x2="200" y2="154" stroke="#FFD700" stroke-width="3" opacity="0.7"/>
+          <line x1="162" y1="126" x2="151" y2="137" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="150" y1="88" x2="134" y2="88" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <line x1="162" y1="50" x2="151" y2="39" stroke="#FFD700" stroke-width="3" opacity="0.75"/>
+          <ellipse cx="90" cy="155" rx="58" ry="24" fill="white" opacity="0.88"/>
+          <ellipse cx="320" cy="168" rx="50" ry="22" fill="white" opacity="0.82"/>
+          <text x="183" y="36" font-family="Kalam" font-weight="700" font-size="22" fill="rgba(255,220,50,0.95)" text-anchor="middle">😊 Glad</text>
+        </svg>
+        <div style="flex:1; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start;">
+          ${glad.length ? glad.map(sbNoteHtml).join('') : empty}
+        </div>
+      </div>
+
     </div>
   </div>`;
 }
@@ -1293,7 +1377,7 @@ function fourlsViewHtml() {
   const learned = notes.filter(n => n.columnId === 'learned');
   const lacked  = notes.filter(n => n.columnId === 'lacked');
   const longed  = notes.filter(n => n.columnId === 'longed');
-  const empty   = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty   = '<div class="sb-empty-hint">${t("noPostit")}</div>';
   return `
   <div class="sailboat-view">
     <div class="visual-container" style="background:#151e15">
@@ -1386,12 +1470,10 @@ function fourlsViewHtml() {
         <text x="985" y="146" font-family="Kalam" font-weight="700" font-size="18" fill="rgba(200,185,230,0.88)" text-anchor="middle">✨ Longed for</text>
       </svg>
 
-      <div class="visual-zones cols-4">
-        <div class="vz"><div class="vz-header">💛 Liked</div><div class="vz-notes">${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">📚 Learned</div><div class="vz-notes">${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">🕳️ Lacked</div><div class="vz-notes">${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div></div>
-        <div class="vz"><div class="vz-header">✨ Longed for</div><div class="vz-notes">${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div></div>
-      </div>
+      <div class="ov-zone ov-liked" style="${zoneStyle(liked.length)}"><div class="ov-label">💛 Liked</div>${liked.length ? liked.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-longed" style="${zoneStyle(longed.length)}"><div class="ov-label">✨ Longed for</div>${longed.length ? longed.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-learned" style="${zoneStyle(learned.length)}"><div class="ov-label">📚 Learned</div>${learned.length ? learned.map(sbNoteHtml).join('') : empty}</div>
+      <div class="ov-zone ov-lacked" style="${zoneStyle(lacked.length)}"><div class="ov-label">🕳️ Lacked</div>${lacked.length ? lacked.map(sbNoteHtml).join('') : empty}</div>
     </div>
   </div>`;
 }
@@ -1399,7 +1481,7 @@ function fourlsViewHtml() {
 /* ============================= EXPORT ============================= */
 
 function buildMarkdown() {
-  const themeDef = THEMES[room.theme];
+  const themeDef = getThemes()[room.theme];
   const date = new Date(room.createdAt || Date.now()).toLocaleDateString('fr-FR');
   let md = `# Rétrospective — ${themeDef.name}\n_${date} — salle ${roomCode}_\n\n`;
   themeDef.columns.forEach(col => {
@@ -1429,19 +1511,34 @@ function buildMarkdown() {
 function openExportModal() {
   const md = buildMarkdown();
   document.getElementById('modal-root').innerHTML = `
-    <div class="modal-bg" data-action="close-modal">
-      <div class="modal" onclick="if(!event.target.closest('[data-action=close-modal]'))event.stopPropagation()">
-        <h3>Exporter la rétro</h3>
+    <div class="modal-bg" data-action="close-modal-bg">
+      <div class="modal">
+        <h3>${t("exportTitle")}</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
-          <button class="btn btn-ghost" data-action="close-modal">Fermer</button>
-          <button class="btn btn-primary" data-action="copy-export">Copier</button>
+          <button class="btn btn-ghost" data-action="close-modal">${t("close")}</button>
+          <button class="btn btn-primary" data-action="copy-export">${t("copy")}</button>
         </div>
       </div>
     </div>`;
 }
 
-/* ============================= RENDER DISPATCH ============================= */
+function openEditModal(noteId) {
+  const note = (room.notes || []).find(n => n.id === noteId);
+  if (!note) return;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-bg" data-action="close-modal-bg">
+      <div class="modal">
+        <h3>${t("editTitle")}</h3>
+        <textarea id="edit-note-text" style="min-height:120px; font-family:'Kalam',cursive; font-size:15px;">${escapeHtml(note.text)}</textarea>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" data-action="close-modal">${t("cancel")}</button>
+          <button class="btn btn-primary" data-action="save-edit" data-id="${noteId}">${t("save")}</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => { const ta = document.getElementById('edit-note-text'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }, 0);
+}
 
 function render() {
   if (loading) {
@@ -1451,15 +1548,19 @@ function render() {
   if (view === "home") renderHome();
   else if (view === "join") renderJoin();
   else renderBoard();
-  requestAnimationFrame(() => {
-    const scene = document.querySelector('.visual-container');
-    if (!scene) return;
-    let maxBottom = 700;
-    scene.querySelectorAll('.sb-zone').forEach(z => {
-      maxBottom = Math.max(maxBottom, z.offsetTop + z.offsetHeight);
-    });
-    scene.style.minHeight = (maxBottom + 20) + 'px';
-  });
+
+  // Language toggle - always visible
+  let langEl = document.getElementById('lang-toggle');
+  if (!langEl) {
+    langEl = document.createElement('div');
+    langEl.id = 'lang-toggle';
+    langEl.className = 'lang-toggle';
+    document.body.appendChild(langEl);
+  }
+  langEl.innerHTML = `
+    <button class="lang-btn ${lang==='fr'?'active':''}" data-action="set-lang" data-lang="fr">FR</button>
+    <button class="lang-btn ${lang==='en'?'active':''}" data-action="set-lang" data-lang="en">EN</button>
+  `;
 }
 
 /* ============================= DRAG & DROP ============================= */
@@ -1509,19 +1610,22 @@ document.addEventListener('click', async (e) => {
     case 'pick-color':
       myColor = btn.dataset.color; render(); break;
 
+    case 'set-lang':
+      setLang(btn.dataset.lang); break;
+
     case 'create-room': {
       const nameInput = document.getElementById('create-name');
       const err = document.getElementById('create-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Création…";
+      btn.disabled = true; btn.textContent = "${t("creating")}";
       try {
         const code = await createRoom(selectedTheme);
         await enterRoom(code);
       } catch (ex) {
         console.error(ex);
-        err.textContent = "Impossible de créer la salle. Réessaie.";
+        err.textContent = "${t("errCreate")}";
         btn.disabled = false; btn.textContent = "Créer la salle →";
       }
       break;
@@ -1533,12 +1637,12 @@ document.addEventListener('click', async (e) => {
       const err = document.getElementById('join-error');
       const name = nameInput.value.trim();
       const code = codeInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
-      if (!code) { err.textContent = "Entre le code de la salle."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
+      if (!code) { err.textContent = "${t("errCode")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Connexion…";
+      btn.disabled = true; btn.textContent = "${t("connecting")}";
       const ok = await enterRoom(code);
-      if (!ok) { err.textContent = "Salle introuvable — vérifie le code."; btn.disabled = false; btn.textContent = "Rejoindre →"; }
+      if (!ok) { err.textContent = "${t("errNotFound")}"; btn.disabled = false; btn.textContent = "Rejoindre →"; }
       break;
     }
 
@@ -1546,11 +1650,11 @@ document.addEventListener('click', async (e) => {
       const nameInput = document.getElementById('join-url-name');
       const err = document.getElementById('join-url-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Connexion…";
+      btn.disabled = true; btn.textContent = "${t("connecting")}";
       const ok = await enterRoom(urlCode);
-      if (!ok) { err.textContent = "Salle introuvable."; btn.disabled = false; btn.textContent = "Rejoindre la rétro →"; }
+      if (!ok) { err.textContent = "${t("errNotFoundShort")}"; btn.disabled = false; btn.textContent = "${t("joinRetroBtn")}"; }
       break;
     }
 
@@ -1558,7 +1662,7 @@ document.addEventListener('click', async (e) => {
 
     case 'copy-code': {
       const shareUrl = `${window.location.origin}/#${roomCode}`;
-      navigator.clipboard.writeText(shareUrl).then(() => showToast("Lien copié !"));
+      navigator.clipboard.writeText(shareUrl).then(() => showToast("${t("linkCopied")}"));
       break;
     }
 
@@ -1598,7 +1702,7 @@ document.addEventListener('click', async (e) => {
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
       await refreshRoom();
-      showToast("Action créée ✓");
+      showToast("${t("actionCreated")}");
       break;
     }
 
@@ -1624,9 +1728,26 @@ document.addEventListener('click', async (e) => {
 
     case 'open-export': openExportModal(); break;
     case 'close-modal': document.getElementById('modal-root').innerHTML = ''; break;
+    case 'close-modal-bg': {
+      // Only close if click is directly on the backdrop, not on modal content inside it
+      if (e.target.classList.contains('modal-bg')) {
+        document.getElementById('modal-root').innerHTML = '';
+      }
+      break;
+    }
+    case 'edit-note': openEditModal(btn.dataset.id); break;
+    case 'save-edit': {
+      const ta = document.getElementById('edit-note-text');
+      const text = ta.value.trim();
+      if (!text) break;
+      await fb.update(`rooms/${roomCode}/notes/${btn.dataset.id}`, { text });
+      document.getElementById('modal-root').innerHTML = '';
+      await refreshRoom();
+      break;
+    }
     case 'copy-export': {
       const ta = document.getElementById('export-text');
-      navigator.clipboard.writeText(ta.value).then(() => showToast("Rétro copiée dans le presse-papiers ✓"));
+      navigator.clipboard.writeText(ta.value).then(() => showToast("${t("retroCopied")}"));
       break;
     }
   }
@@ -1681,7 +1802,7 @@ document.addEventListener('keydown', (e) => {
         view = "join";
         render();
       } else {
-        showToast("Salle introuvable.");
+        showToast("${t("errNotFoundShort")}");
         window.location.hash = '';
         render();
       }
