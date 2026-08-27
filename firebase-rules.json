@@ -1,0 +1,34 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['theme', 'createdAt'])",
+        "notes": {
+          "$noteId": {
+            ".validate": "newData.hasChildren(['id', 'text', 'author', 'columnId'])"
+          }
+        },
+        "todos": {
+          "$todoId": {
+            ".validate": "newData.hasChildren(['id', 'text'])"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$roomId": {
+        "$userId": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.hasChildren(['name', 'ts'])"
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
