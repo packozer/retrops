@@ -3,7 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Rétrops — Rétrospectives d'équipe</title>
+<title>Rétrops — Free Online Retrospective Tool | Outil de rétrospective gratuit</title>
+<meta name="description" content="Run sprint retrospectives in seconds. No signup, no trial, no friction. Create a room, share the link, start collecting feedback with your team. Free forever.">
+<meta name="keywords" content="retrospective, sprint retrospective, scrum, agile, retro tool, free retrospective, online retrospective, team retrospective, start stop continue, mad sad glad, sailboat retrospective, 4Ls retrospective, post-it, postit, rétrospective, outil rétro gratuit">
+<meta name="author" content="Rétrops">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://retrops.vercel.app/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rétrops — Free Sprint Retrospective Tool">
+<meta property="og:description" content="No signup. No trial. Open the link, pick a name, start your retro. Free forever.">
+<meta property="og:url" content="https://retrops.vercel.app/">
+<meta property="og:site_name" content="Rétrops">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:locale:alternate" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rétrops — Free Sprint Retrospective Tool">
+<meta name="twitter:description" content="No signup. No trial. Open the link, start your retro.">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Rétrops",
+  "url": "https://retrops.vercel.app/",
+  "description": "Free online sprint retrospective tool. No signup required. Real-time collaboration with post-its, voting, and action plans.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "inLanguage": ["fr", "en"]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Manrope:wght@400;500;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -395,6 +430,17 @@
     .board{padding:12px; gap:12px;}
     .column{min-width:250px; max-width:250px;}
   }
+
+  .lang-toggle{
+    position:fixed; bottom:16px; right:16px; z-index:80;
+    background:var(--panel); border:1px solid var(--line-strong); border-radius:20px;
+    display:flex; overflow:hidden;
+  }
+  .lang-btn{
+    padding:6px 12px; font-size:12px; font-weight:700; background:none; border:none;
+    color:var(--ink-faint); cursor:pointer;
+  }
+  .lang-btn.active{background:var(--accent); color:var(--accent-ink);}
 </style>
 </head>
 <body>
@@ -452,48 +498,124 @@ const fb = {
   }
 };
 
-/* ============================= CONFIG / DATA ============================= */
+/* ============================= i18n ============================= */
 
-const THEMES = {
-  sstop: {
-    name: "Start / Stop / Continue",
-    desc: "Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
-    columns: [
-      { id: "start", label: "Start", icon: "🌱", tape: "var(--tape-4)" },
-      { id: "stop", label: "Stop", icon: "🛑", tape: "var(--tape-3)" },
-      { id: "continue", label: "Continue", icon: "🔁", tape: "var(--tape-2)" }
-    ]
+let lang = localStorage.getItem('retrops_lang') || (navigator.language.startsWith('fr') ? 'fr' : 'en');
+
+const i18n = {
+  fr: {
+    heroSub: "Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.",
+    createTitle: "Créer une rétro", createSub: "Choisis un template et lance la session",
+    joinTitle: "Rejoindre une rétro", joinSub: "Ton équipe t'a envoyé un code",
+    yourName: "Ton prénom", yourColor: "Ta couleur de post-it",
+    namePlaceholder: "Ex. Camille", codePlaceholder: "AB3XZ",
+    chooseTemplate: "Choisis un template de rétro", roomCode: "Code de la salle",
+    createBtn: "Créer la salle →", joinBtn: "Rejoindre →", joinRetroBtn: "${t("joinRetroBtn")}",
+    creating: "${t("creating")}", connecting: "${t("connecting")}",
+    errName: "${t("errName")}", errCode: "${t("errCode")}",
+    errCreate: "${t("errCreate")}", errNotFound: "${t("errNotFound")}",
+    errNotFoundShort: "${t("errNotFoundShort")}", errNetwork: "${t("errNetwork")}",
+    board: "Tableau", actions: "Actions", export: "Exporter", quit: "Quitter", room: "Salle",
+    addPostit: "${t("addPostit")}", cancel: "Annuler", add: "Ajouter",
+    writeIdea: "${t("writeIdea")}",
+    actionPlan: "Plan d'action", actionSub: "${t("actionSub")}",
+    newAction: "${t("newAction")}", unassigned: "Non assigné",
+    noActions: "${t("noActions")}",
+    createAction: "${t("createAction")}", editNote: "${t("editNote")}", deleteNote: "${t("deleteNote")}",
+    actionCreated: "${t("actionCreated")}", linkCopied: "${t("linkCopied")}",
+    exportTitle: "Exporter la rétro", close: "Fermer", copy: "Copier",
+    retroCopied: "${t("retroCopied")}",
+    editTitle: "Modifier le post-it", save: "Enregistrer",
+    stop: "Arrêter", noPostit: "${t("noPostit")}",
+    copyLink: "Copier le lien de la salle",
+    sstopName: "Start / Stop / Continue", sstopDesc: "Ce qu'on démarre, ce qu'on arrête, ce qu'on garde.",
+    msgName: "Mad / Sad / Glad", msgDesc: "L'humeur de l'équipe depuis le dernier sprint.",
+    fourlsName: "4 L's", fourlsDesc: "Liked, Learned, Lacked, Longed for.",
+    sailboatName: "Sailboat", sailboatDesc: "Vent, ancre, rochers et l'île à atteindre.",
+    viewSailboat: "${t("viewSailboat")}", viewWeather: "${t("viewWeather")}", viewMountain: "${t("viewMountain")}",
   },
-  msg: {
-    name: "Mad / Sad / Glad",
-    desc: "L'humeur de l'équipe depuis le dernier sprint.",
-    columns: [
-      { id: "mad", label: "Mad", icon: "😠", tape: "var(--tape-3)" },
-      { id: "sad", label: "Sad", icon: "😢", tape: "var(--tape-2)" },
-      { id: "glad", label: "Glad", icon: "😊", tape: "var(--tape-4)" }
-    ]
-  },
-  fourls: {
-    name: "4 L's",
-    desc: "Liked, Learned, Lacked, Longed for.",
-    columns: [
-      { id: "liked", label: "Liked", icon: "💛", tape: "var(--tape-1)" },
-      { id: "learned", label: "Learned", icon: "📚", tape: "var(--tape-2)" },
-      { id: "lacked", label: "Lacked", icon: "🕳️", tape: "var(--tape-3)" },
-      { id: "longed", label: "Longed for", icon: "✨", tape: "var(--tape-5)" }
-    ]
-  },
-  sailboat: {
-    name: "Sailboat",
-    desc: "Vent, ancre, rochers et l'île à atteindre.",
-    columns: [
-      { id: "wind", label: "Vent", icon: "⛵", tape: "var(--tape-2)" },
-      { id: "anchor", label: "Ancre", icon: "⚓", tape: "var(--tape-3)" },
-      { id: "rocks", label: "Rochers", icon: "🪨", tape: "var(--tape-1)" },
-      { id: "island", label: "Île", icon: "🏝️", tape: "var(--tape-4)" }
-    ]
+  en: {
+    heroSub: "Online team retrospectives — post-its, voting, action plans. Everyone joins live from their own device.",
+    createTitle: "Create a retro", createSub: "Pick a template and start the session",
+    joinTitle: "Join a retro", joinSub: "Your team sent you a code",
+    yourName: "Your name", yourColor: "Your post-it color",
+    namePlaceholder: "e.g. Alex", codePlaceholder: "AB3XZ",
+    chooseTemplate: "Choose a retro template", roomCode: "Room code",
+    createBtn: "Create room →", joinBtn: "Join →", joinRetroBtn: "Join the retro →",
+    creating: "Creating…", connecting: "Connecting…",
+    errName: "Enter your name to continue.", errCode: "Enter the room code.",
+    errCreate: "Could not create the room. Try again.", errNotFound: "Room not found — check the code.",
+    errNotFoundShort: "Room not found.", errNetwork: "Network error — check your connection.",
+    board: "Board", actions: "Actions", export: "Export", quit: "Leave", room: "Room",
+    addPostit: "+ Add a post-it", cancel: "Cancel", add: "Add",
+    writeIdea: "Write your idea…",
+    actionPlan: "Action plan", actionSub: "Concrete actions coming out of this retro.",
+    newAction: "New action item…", unassigned: "Unassigned",
+    noActions: "No actions yet. Click on a post-it → \"Create action\", or add one directly here.",
+    createAction: "📌 Create action", editNote: "✏️ Edit", deleteNote: "🗑 Delete",
+    actionCreated: "Action created ✓", linkCopied: "Link copied!",
+    exportTitle: "Export retro", close: "Close", copy: "Copy",
+    retroCopied: "Retro copied to clipboard ✓",
+    editTitle: "Edit post-it", save: "Save",
+    stop: "Stop", noPostit: "No post-its",
+    copyLink: "Copy room link",
+    sstopName: "Start / Stop / Continue", sstopDesc: "What to start, stop, and keep doing.",
+    msgName: "Mad / Sad / Glad", msgDesc: "Team mood since last sprint.",
+    fourlsName: "4 L's", fourlsDesc: "Liked, Learned, Lacked, Longed for.",
+    sailboatName: "Sailboat", sailboatDesc: "Wind, anchor, rocks, and the island to reach.",
+    viewSailboat: "⛵ Sailboat View", viewWeather: "🌦 Weather View", viewMountain: "🏔️ Expedition View",
   }
 };
+
+function t(key) { return (i18n[lang] || i18n.en)[key] || key; }
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem('retrops_lang', l);
+  document.documentElement.lang = l;
+  render();
+}
+
+/* ============================= CONFIG / DATA ============================= */
+
+function getThemes() {
+  return {
+    sstop: {
+      name: t('sstopName'), desc: t('sstopDesc'),
+      columns: [
+        { id: "start", label: "Start", icon: "🌱", tape: "var(--tape-4)" },
+        { id: "stop", label: "Stop", icon: "🛑", tape: "var(--tape-3)" },
+        { id: "continue", label: "Continue", icon: "🔁", tape: "var(--tape-2)" }
+      ]
+    },
+    msg: {
+      name: t('msgName'), desc: t('msgDesc'),
+      columns: [
+        { id: "mad", label: "Mad", icon: "😠", tape: "var(--tape-3)" },
+        { id: "sad", label: "Sad", icon: "😢", tape: "var(--tape-2)" },
+        { id: "glad", label: "Glad", icon: "😊", tape: "var(--tape-4)" }
+      ]
+    },
+    fourls: {
+      name: t('fourlsName'), desc: t('fourlsDesc'),
+      columns: [
+        { id: "liked", label: "Liked", icon: "💛", tape: "var(--tape-1)" },
+        { id: "learned", label: "Learned", icon: "📚", tape: "var(--tape-2)" },
+        { id: "lacked", label: "Lacked", icon: "🕳️", tape: "var(--tape-3)" },
+        { id: "longed", label: "Longed for", icon: "✨", tape: "var(--tape-5)" }
+      ]
+    },
+    sailboat: {
+      name: t('sailboatName'), desc: t('sailboatDesc'),
+      columns: [
+        { id: "wind", label: lang==='fr'?"Vent":"Wind", icon: "⛵", tape: "var(--tape-2)" },
+        { id: "anchor", label: lang==='fr'?"Ancre":"Anchor", icon: "⚓", tape: "var(--tape-3)" },
+        { id: "rocks", label: lang==='fr'?"Rochers":"Rocks", icon: "🪨", tape: "var(--tape-1)" },
+        { id: "island", label: lang==='fr'?"Île":"Island", icon: "🏝️", tape: "var(--tape-4)" }
+      ]
+    }
+  };
+}
 
 const NOTE_COLORS = ["note-1", "note-2", "note-3", "note-4", "note-5", "note-6"];
 
@@ -705,7 +827,7 @@ async function enterRoom(code) {
   loading = true; render();
   try {
     const data = await fetchRoom(roomCode);
-    if (!data) { loading = false; render(); showToast("Salle introuvable — vérifie le code."); return false; }
+    if (!data) { loading = false; render(); showToast("${t("errNotFound")}"); return false; }
     room = roomToArrays(data);
     view = "board";
     activeTab = "board";
@@ -730,7 +852,7 @@ async function enterRoom(code) {
     return true;
   } catch (e) {
     loading = false; render();
-    showToast("Erreur réseau — vérifie ta connexion.");
+    showToast("${t("errNetwork")}");
     return false;
   }
 }
@@ -750,14 +872,15 @@ function leaveRoom() {
 /* ============================= RENDER: HOME ============================= */
 
 function renderHome() {
-  const themeCards = Object.keys(THEMES).map(key => {
-    const t = THEMES[key];
+  const themes = getThemes();
+  const themeCards = Object.keys(themes).map(key => {
+    const th = themes[key];
     const sel = selectedTheme === key ? "selected" : "";
-    const strips = t.columns.map(c => `<i style="background:${c.tape}"></i>`).join("");
+    const strips = th.columns.map(c => `<i style="background:${c.tape}"></i>`).join("");
     return `<button type="button" class="theme-card ${sel}" data-action="pick-theme" data-theme="${key}">
       <div class="theme-strip">${strips}</div>
-      <div class="t-name">${escapeHtml(t.name)}</div>
-      <div class="t-desc">${escapeHtml(t.desc)}</div>
+      <div class="t-name">${escapeHtml(th.name)}</div>
+      <div class="t-desc">${escapeHtml(th.desc)}</div>
     </button>`;
   }).join("");
 
@@ -770,42 +893,42 @@ function renderHome() {
   document.getElementById('app').innerHTML = `
     <div class="home">
       <div class="home-hero">
-        <div class="brand">RétrOps<span class="dot">.</span></div>
-        <p>Rétrospectives d'équipe en ligne — post-its, vote, plan d'action. Chacun participe en direct depuis son poste.</p>
+        <div class="brand">Rétrops<span class="dot">.</span></div>
+        <p>${t('heroSub')}</p>
       </div>
       <div class="home-cards">
         <div class="home-card">
-          <h2>Créer une rétro<span>Choisis un template et lance la session</span></h2>
+          <h2>${t('createTitle')}<span>${t('createSub')}</span></h2>
           <div class="field">
-            <label>Ton prénom</label>
-            <input id="create-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+            <label>${t('yourName')}</label>
+            <input id="create-name" type="text" placeholder="${t('namePlaceholder')}" value="${escapeHtml(myName)}" maxlength="24">
           </div>
           <div class="field">
-            <label>Ta couleur de post-it</label>
-            <div class="color-picker" id="create-color-picker">${colorDots}</div>
+            <label>${t('yourColor')}</label>
+            <div class="color-picker">${colorDots}</div>
           </div>
           <div class="field">
-            <label>Choisis un template de rétro</label>
+            <label>${t('chooseTemplate')}</label>
             <div class="theme-grid">${themeCards}</div>
           </div>
-          <button class="btn btn-primary btn-block" data-action="create-room">Créer la salle →</button>
+          <button class="btn btn-primary btn-block" data-action="create-room">${t('createBtn')}</button>
           <div class="hint-error" id="create-error"></div>
         </div>
         <div class="home-card">
-          <h2>Rejoindre une rétro<span>Ton équipe t'a envoyé un code</span></h2>
+          <h2>${t('joinTitle')}<span>${t('joinSub')}</span></h2>
           <div class="field">
-            <label>Ton prénom</label>
-            <input id="join-name" type="text" placeholder="Ex. Camille" value="${escapeHtml(myName)}" maxlength="24">
+            <label>${t('yourName')}</label>
+            <input id="join-name" type="text" placeholder="${t('namePlaceholder')}" value="${escapeHtml(myName)}" maxlength="24">
           </div>
           <div class="field">
-            <label>Ta couleur de post-it</label>
-            <div class="color-picker" id="join-color-picker">${colorDots}</div>
+            <label>${t('yourColor')}</label>
+            <div class="color-picker">${colorDots}</div>
           </div>
           <div class="field">
-            <label>Code de la salle</label>
-            <input id="join-code" class="code" type="text" placeholder="AB3XZ" maxlength="6">
+            <label>${t('roomCode')}</label>
+            <input id="join-code" class="code" type="text" placeholder="${t('codePlaceholder')}" maxlength="6">
           </div>
-          <button class="btn btn-primary btn-block" data-action="join-room">Rejoindre →</button>
+          <button class="btn btn-primary btn-block" data-action="join-room">${t('joinBtn')}</button>
           <div class="hint-error" id="join-error"></div>
         </div>
       </div>
@@ -822,7 +945,7 @@ function renderJoin() {
     return `<button class="color-dot ${sel}" style="background:var(--${c});color:${inkVar}" data-action="pick-color" data-color="${c}"></button>`;
   }).join("");
 
-  const themeName = joinRoomData && THEMES[joinRoomData.theme] ? THEMES[joinRoomData.theme].name : '';
+  const themeName = joinRoomData && getThemes()[joinRoomData.theme] ? getThemes()[joinRoomData.theme].name : '';
 
   document.getElementById('app').innerHTML = `
     <div class="join-view">
@@ -840,7 +963,7 @@ function renderJoin() {
           <label>Ta couleur de post-it</label>
           <div class="color-picker">${colorDots}</div>
         </div>
-        <button class="btn btn-primary btn-block" data-action="join-room-url">Rejoindre la rétro →</button>
+        <button class="btn btn-primary btn-block" data-action="join-room-url">${t("joinRetroBtn")}</button>
         <div class="hint-error" id="join-url-error"></div>
       </div>
     </div>
@@ -900,7 +1023,7 @@ function noteHtml(n) {
   const myVote = votes.includes(myName);
   const isMine = n.author === myName;
   const menuOpen = openMenus['note:' + n.id] ? 'open' : '';
-  const cols = THEMES[room.theme].columns;
+  const cols = getThemes()[room.theme].columns;
   const moveOptions = cols.filter(c => c.id !== n.columnId).map(c =>
     `<button data-action="move-note" data-id="${n.id}" data-col="${c.id}">→ ${escapeHtml(c.label)}</button>`
   ).join("");
@@ -915,11 +1038,11 @@ function noteHtml(n) {
         <div class="note-menu ${menuOpen}">
           <button class="icon-btn" data-action="toggle-note-menu" data-id="${n.id}">⋯</button>
           <div class="pop">
-            <button data-action="edit-note" data-id="${n.id}">✏️ Modifier</button>
-            <button data-action="to-todo" data-id="${n.id}">📌 Créer une action</button>
+            <button data-action="edit-note" data-id="${n.id}">${t("editNote")}</button>
+            <button data-action="to-todo" data-id="${n.id}">${t("createAction")}</button>
             <div class="sep"></div>
             ${moveOptions}
-            ${isMine ? `<div class="sep"></div><button class="danger" data-action="delete-note" data-id="${n.id}">🗑 Supprimer</button>` : ""}
+            ${isMine ? `<div class="sep"></div><button class="danger" data-action="delete-note" data-id="${n.id}">${t("deleteNote")}</button>` : ""}
           </div>
         </div>
       </div>
@@ -944,13 +1067,13 @@ function columnHtml(col) {
     <div class="column-add">
       ${composerOpen ? `
         <div class="composer">
-          <textarea id="composer-input" placeholder="Écris ton idée…" autofocus></textarea>
+          <textarea id="composer-input" placeholder="${t("writeIdea")}" autofocus></textarea>
           <div class="composer-actions">
-            <button class="btn btn-ghost btn-sm" data-action="cancel-add" data-col="${col.id}">Annuler</button>
-            <button class="btn btn-primary btn-sm" data-action="submit-add" data-col="${col.id}">Ajouter</button>
+            <button class="btn btn-ghost btn-sm" data-action="cancel-add" data-col="${col.id}">${t("cancel")}</button>
+            <button class="btn btn-primary btn-sm" data-action="submit-add" data-col="${col.id}">${t("add")}</button>
           </div>
         </div>
-      ` : `<button class="add-note-btn" data-action="open-add" data-col="${col.id}">+ Ajouter un post-it</button>`}
+      ` : `<button class="add-note-btn" data-action="open-add" data-col="${col.id}">${t("addPostit")}</button>`}
     </div>
   </div>`;
 }
@@ -959,7 +1082,7 @@ function actionsViewHtml() {
   const todos = (room.todos || []).slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.order - b.order);
   const authors = allAuthors();
   const rows = todos.map(t => {
-    const opts = ['<option value="">Non assigné</option>']
+    const opts = ['<option value="">${t("unassigned")}</option>']
       .concat(authors.map(a => `<option value="${escapeHtml(a)}" ${t.assignee === a ? 'selected' : ''}>${escapeHtml(a)}</option>`)).join("");
     return `
     <div class="todo-row ${t.done ? 'done' : ''}">
@@ -973,21 +1096,21 @@ function actionsViewHtml() {
   return `
   <div class="actions-view">
     <div class="actions-inner">
-      <h2>Plan d'action</h2>
-      <div class="sub">Les actions concrètes qui sortent de cette rétro.</div>
+      <h2>${t("actionPlan")}</h2>
+      <div class="sub">${t("actionSub")}</div>
       <div class="todo-composer">
-        <input id="new-todo-input" type="text" placeholder="Nouvelle action à mener…" maxlength="140">
-        <button class="btn btn-primary btn-sm" data-action="add-todo">Ajouter</button>
+        <input id="new-todo-input" type="text" placeholder="${t("newAction")}" maxlength="140">
+        <button class="btn btn-primary btn-sm" data-action="add-todo">${t("add")}</button>
       </div>
       <div class="todo-list">
-        ${todos.length ? rows : `<div class="todo-empty">Aucune action pour l'instant. Clique sur un post-it → « Créer une action », ou ajoute-en une directement ici.</div>`}
+        ${todos.length ? rows : `<div class="todo-empty">${t("noActions")}</div>`}
       </div>
     </div>
   </div>`;
 }
 
 function renderBoard() {
-  const themeDef = THEMES[room.theme];
+  const themeDef = getThemes()[room.theme];
   const timerOpen = openMenus['timer'] ? 'open' : '';
   const timerActive = room.timerEndsAt && room.timerEndsAt > 0;
   const remain = timerActive ? room.timerEndsAt - Date.now() : null;
@@ -995,7 +1118,7 @@ function renderBoard() {
   document.getElementById('app').innerHTML = `
     <div class="board-view">
       <div class="topbar">
-        <div class="room-badge" data-action="copy-code" title="Copier le lien de la salle">
+        <div class="room-badge" data-action="copy-code" title="${t('copyLink')}">
           <div><div class="lbl">Salle</div><div class="code">${roomCode}</div></div>
         </div>
         <div class="theme-pill">${themeDef.name}</div>
@@ -1009,16 +1132,16 @@ function renderBoard() {
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="5">5 min</button>
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="10">10 min</button>
             <button class="btn btn-ghost btn-sm btn-block" data-action="start-timer" data-min="15">15 min</button>
-            <button class="btn btn-ghost btn-sm btn-block" data-action="clear-timer">Arrêter</button>
+            <button class="btn btn-ghost btn-sm btn-block" data-action="clear-timer">${t("stop")}</button>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" data-action="open-export">Exporter</button>
-        <button class="btn btn-ghost btn-sm" data-action="leave-room">Quitter</button>
+        <button class="btn btn-ghost btn-sm" data-action="open-export">${t("export")}</button>
+        <button class="btn btn-ghost btn-sm" data-action="leave-room">${t("quit")}</button>
       </div>
       <div class="tabs">
-        <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">Tableau</button>
-        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛵ Vue Sailboat</button>` : room.theme === 'msg' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">🌦 Vue Météo</button>` : room.theme === 'fourls' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛰ Vue Montagne</button>` : ''}
-        <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">Actions ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
+        <button class="tab ${activeTab === 'board' ? 'active' : ''}" data-action="set-tab" data-tab="board">${t("board")}</button>
+        ${room.theme === 'sailboat' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">${t("viewSailboat")}</button>` : room.theme === 'msg' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">${t("viewWeather")}</button>` : room.theme === 'fourls' ? `<button class="tab ${activeTab === 'visual' ? 'active' : ''}" data-action="set-tab" data-tab="visual">⛰ Vue Montagne</button>` : ''}
+        <button class="tab ${activeTab === 'actions' ? 'active' : ''}" data-action="set-tab" data-tab="actions">${t('actions')} ${(room.todos || []).length ? '(' + room.todos.length + ')' : ''}</button>
       </div>
       ${activeTab === 'board' ? `<div class="board">${themeDef.columns.map(columnHtml).join("")}</div>` : activeTab === 'visual' ? (room.theme === 'msg' ? msgViewHtml() : room.theme === 'fourls' ? fourlsViewHtml() : sailboatViewHtml()) : actionsViewHtml()}
     </div>
@@ -1056,7 +1179,7 @@ function sailboatViewHtml() {
   const anchor = notes.filter(n => n.columnId === 'anchor');
   const rocks = notes.filter(n => n.columnId === 'rocks');
   const island = notes.filter(n => n.columnId === 'island');
-  const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty = '<div class="sb-empty-hint">${t("noPostit")}</div>';
 
   return `
   <div class="sailboat-view">
@@ -1176,7 +1299,7 @@ function msgViewHtml() {
   const mad   = notes.filter(n => n.columnId === 'mad');
   const sad   = notes.filter(n => n.columnId === 'sad');
   const glad  = notes.filter(n => n.columnId === 'glad');
-  const empty = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty = '<div class="sb-empty-hint">${t("noPostit")}</div>';
   return `
   <div class="sailboat-view">
     <div class="visual-container" style="display:flex; width:100%; max-width:1100px; border-radius:14px; overflow:hidden;">
@@ -1254,7 +1377,7 @@ function fourlsViewHtml() {
   const learned = notes.filter(n => n.columnId === 'learned');
   const lacked  = notes.filter(n => n.columnId === 'lacked');
   const longed  = notes.filter(n => n.columnId === 'longed');
-  const empty   = '<div class="sb-empty-hint">Aucun post-it</div>';
+  const empty   = '<div class="sb-empty-hint">${t("noPostit")}</div>';
   return `
   <div class="sailboat-view">
     <div class="visual-container" style="background:#151e15">
@@ -1358,7 +1481,7 @@ function fourlsViewHtml() {
 /* ============================= EXPORT ============================= */
 
 function buildMarkdown() {
-  const themeDef = THEMES[room.theme];
+  const themeDef = getThemes()[room.theme];
   const date = new Date(room.createdAt || Date.now()).toLocaleDateString('fr-FR');
   let md = `# Rétrospective — ${themeDef.name}\n_${date} — salle ${roomCode}_\n\n`;
   themeDef.columns.forEach(col => {
@@ -1390,11 +1513,11 @@ function openExportModal() {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal-bg">
       <div class="modal">
-        <h3>Exporter la rétro</h3>
+        <h3>${t("exportTitle")}</h3>
         <textarea readonly id="export-text">${escapeHtml(md)}</textarea>
         <div class="modal-actions">
-          <button class="btn btn-ghost" data-action="close-modal">Fermer</button>
-          <button class="btn btn-primary" data-action="copy-export">Copier</button>
+          <button class="btn btn-ghost" data-action="close-modal">${t("close")}</button>
+          <button class="btn btn-primary" data-action="copy-export">${t("copy")}</button>
         </div>
       </div>
     </div>`;
@@ -1406,11 +1529,11 @@ function openEditModal(noteId) {
   document.getElementById('modal-root').innerHTML = `
     <div class="modal-bg" data-action="close-modal-bg">
       <div class="modal">
-        <h3>Modifier le post-it</h3>
+        <h3>${t("editTitle")}</h3>
         <textarea id="edit-note-text" style="min-height:120px; font-family:'Kalam',cursive; font-size:15px;">${escapeHtml(note.text)}</textarea>
         <div class="modal-actions">
-          <button class="btn btn-ghost" data-action="close-modal">Annuler</button>
-          <button class="btn btn-primary" data-action="save-edit" data-id="${noteId}">Enregistrer</button>
+          <button class="btn btn-ghost" data-action="close-modal">${t("cancel")}</button>
+          <button class="btn btn-primary" data-action="save-edit" data-id="${noteId}">${t("save")}</button>
         </div>
       </div>
     </div>`;
@@ -1425,6 +1548,19 @@ function render() {
   if (view === "home") renderHome();
   else if (view === "join") renderJoin();
   else renderBoard();
+
+  // Language toggle - always visible
+  let langEl = document.getElementById('lang-toggle');
+  if (!langEl) {
+    langEl = document.createElement('div');
+    langEl.id = 'lang-toggle';
+    langEl.className = 'lang-toggle';
+    document.body.appendChild(langEl);
+  }
+  langEl.innerHTML = `
+    <button class="lang-btn ${lang==='fr'?'active':''}" data-action="set-lang" data-lang="fr">FR</button>
+    <button class="lang-btn ${lang==='en'?'active':''}" data-action="set-lang" data-lang="en">EN</button>
+  `;
 }
 
 /* ============================= DRAG & DROP ============================= */
@@ -1474,19 +1610,22 @@ document.addEventListener('click', async (e) => {
     case 'pick-color':
       myColor = btn.dataset.color; render(); break;
 
+    case 'set-lang':
+      setLang(btn.dataset.lang); break;
+
     case 'create-room': {
       const nameInput = document.getElementById('create-name');
       const err = document.getElementById('create-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Création…";
+      btn.disabled = true; btn.textContent = "${t("creating")}";
       try {
         const code = await createRoom(selectedTheme);
         await enterRoom(code);
       } catch (ex) {
         console.error(ex);
-        err.textContent = "Impossible de créer la salle. Réessaie.";
+        err.textContent = "${t("errCreate")}";
         btn.disabled = false; btn.textContent = "Créer la salle →";
       }
       break;
@@ -1498,12 +1637,12 @@ document.addEventListener('click', async (e) => {
       const err = document.getElementById('join-error');
       const name = nameInput.value.trim();
       const code = codeInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
-      if (!code) { err.textContent = "Entre le code de la salle."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
+      if (!code) { err.textContent = "${t("errCode")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Connexion…";
+      btn.disabled = true; btn.textContent = "${t("connecting")}";
       const ok = await enterRoom(code);
-      if (!ok) { err.textContent = "Salle introuvable — vérifie le code."; btn.disabled = false; btn.textContent = "Rejoindre →"; }
+      if (!ok) { err.textContent = "${t("errNotFound")}"; btn.disabled = false; btn.textContent = "Rejoindre →"; }
       break;
     }
 
@@ -1511,11 +1650,11 @@ document.addEventListener('click', async (e) => {
       const nameInput = document.getElementById('join-url-name');
       const err = document.getElementById('join-url-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "Entre ton prénom pour continuer."; return; }
+      if (!name) { err.textContent = "${t("errName")}"; return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "Connexion…";
+      btn.disabled = true; btn.textContent = "${t("connecting")}";
       const ok = await enterRoom(urlCode);
-      if (!ok) { err.textContent = "Salle introuvable."; btn.disabled = false; btn.textContent = "Rejoindre la rétro →"; }
+      if (!ok) { err.textContent = "${t("errNotFoundShort")}"; btn.disabled = false; btn.textContent = "${t("joinRetroBtn")}"; }
       break;
     }
 
@@ -1523,7 +1662,7 @@ document.addEventListener('click', async (e) => {
 
     case 'copy-code': {
       const shareUrl = `${window.location.origin}/#${roomCode}`;
-      navigator.clipboard.writeText(shareUrl).then(() => showToast("Lien copié !"));
+      navigator.clipboard.writeText(shareUrl).then(() => showToast("${t("linkCopied")}"));
       break;
     }
 
@@ -1563,7 +1702,7 @@ document.addEventListener('click', async (e) => {
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
       await refreshRoom();
-      showToast("Action créée ✓");
+      showToast("${t("actionCreated")}");
       break;
     }
 
@@ -1608,7 +1747,7 @@ document.addEventListener('click', async (e) => {
     }
     case 'copy-export': {
       const ta = document.getElementById('export-text');
-      navigator.clipboard.writeText(ta.value).then(() => showToast("Rétro copiée dans le presse-papiers ✓"));
+      navigator.clipboard.writeText(ta.value).then(() => showToast("${t("retroCopied")}"));
       break;
     }
   }
@@ -1663,7 +1802,7 @@ document.addEventListener('keydown', (e) => {
         view = "join";
         render();
       } else {
-        showToast("Salle introuvable.");
+        showToast("${t("errNotFoundShort")}");
         window.location.hash = '';
         render();
       }
