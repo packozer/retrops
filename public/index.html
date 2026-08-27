@@ -441,6 +441,19 @@
     color:var(--ink-faint); cursor:pointer;
   }
   .lang-btn.active{background:var(--accent); color:var(--accent-ink);}
+
+  .history-section{width:100%; max-width:920px;}
+  .history-section h3{font-family:'Kalam',cursive; font-size:20px; margin:0 0 12px;}
+  .history-list{display:flex; flex-direction:column; gap:8px;}
+  .history-row{
+    display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:12px 14px; cursor:pointer; transition:border-color .15s;
+  }
+  .history-row:hover{border-color:var(--ink-faint);}
+  .history-row .h-theme{font-weight:700; font-size:13px; flex:1;}
+  .history-row .h-date{font-size:11px; color:var(--ink-faint);}
+  .history-row .h-stats{font-size:11px; color:var(--ink-dim);}
+  .history-row .h-actions{display:flex; gap:6px;}
 </style>
 </head>
 <body>
@@ -662,7 +675,7 @@ let joinRoomData = null; // room metadata for join view
 
 /* ============================= FIREBASE SYNC ============================= */
 
-async function createRoom(theme) {
+async function createRoom(theme, password) {
   const code = makeCode();
   const initial = {
     theme,
@@ -671,6 +684,7 @@ async function createRoom(theme) {
     todos: {},
     timerEndsAt: null
   };
+  if (password) initial.password = password;
   await fb.set(`rooms/${code}`, initial);
   return code;
 }
@@ -828,6 +842,22 @@ async function enterRoom(code) {
   try {
     const data = await fetchRoom(roomCode);
     if (!data) { loading = false; render(); showToast(t("errNotFound")); return false; }
+    
+    // Check password if room is protected
+    if (data.password) {
+      const savedPw = sessionStorage.getItem('retrops_pw_' + roomCode);
+      if (savedPw !== data.password) {
+        loading = false;
+        const pw = prompt(lang === 'fr' ? 'Cette salle est protégée. Mot de passe :' : 'This room is protected. Password:');
+        if (pw !== data.password) {
+          showToast(lang === 'fr' ? 'Mot de passe incorrect.' : 'Wrong password.');
+          render();
+          return false;
+        }
+        sessionStorage.setItem('retrops_pw_' + roomCode, pw);
+      }
+    }
+    
     room = roomToArrays(data);
     view = "board";
     activeTab = "board";
@@ -847,8 +877,8 @@ async function enterRoom(code) {
     heartbeatTimer = setInterval(sendHeartbeat, 9000);
     pollTimer = setInterval(pollPresence, 5000);
     clockTimer = setInterval(() => { if (view === 'board') renderTimerOnly(); }, 1000);
-    // Fallback polling every 3s in case SSE doesn't work
-    window._roomPoll = setInterval(syncRoom, 3000);
+    // Fallback polling every 1.5s in case SSE doesn't work
+    window._roomPoll = setInterval(syncRoom, 1500);
     return true;
   } catch (e) {
     loading = false; render();
@@ -858,6 +888,26 @@ async function enterRoom(code) {
 }
 
 function leaveRoom() {
+  // Save retro snapshot to history before leaving
+  if (room && roomCode) {
+    try {
+      const history = JSON.parse(localStorage.getItem('retrops_history') || '[]');
+      const themeDef = getThemes()[room.theme];
+      const snapshot = {
+        code: roomCode,
+        theme: room.theme,
+        themeName: themeDef ? themeDef.name : room.theme,
+        date: new Date().toISOString(),
+        noteCount: (room.notes || []).length,
+        todoCount: (room.todos || []).length,
+        markdown: buildMarkdown()
+      };
+      // Keep last 20 retros, avoid duplicates
+      const filtered = history.filter(h => h.code !== roomCode);
+      filtered.unshift(snapshot);
+      localStorage.setItem('retrops_history', JSON.stringify(filtered.slice(0, 20)));
+    } catch(e) {}
+  }
   if (roomListener) { roomListener.close(); roomListener = null; }
   if (heartbeatTimer) clearInterval(heartbeatTimer);
   if (pollTimer) clearInterval(pollTimer);
@@ -911,6 +961,10 @@ function renderHome() {
             <label>${t('chooseTemplate')}</label>
             <div class="theme-grid">${themeCards}</div>
           </div>
+          <div class="field">
+            <label>${lang === 'fr' ? 'Mot de passe (optionnel)' : 'Password (optional)'}</label>
+            <input id="create-password" type="text" placeholder="${lang === 'fr' ? 'Laisser vide = libre accès' : 'Leave empty = open access'}" maxlength="32">
+          </div>
           <button class="btn btn-primary btn-block" data-action="create-room">${t('createBtn')}</button>
           <div class="hint-error" id="create-error"></div>
         </div>
@@ -932,8 +986,33 @@ function renderHome() {
           <div class="hint-error" id="join-error"></div>
         </div>
       </div>
+      ${renderHistory()}
     </div>
   `;
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('retrops_history') || '[]');
+  if (!history.length) return '';
+  const rows = history.map((h, i) => {
+    const d = new Date(h.date);
+    const dateStr = d.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    const stats = `${h.noteCount || 0} post-its · ${h.todoCount || 0} actions`;
+    return `<div class="history-row">
+      <div class="h-theme">${escapeHtml(h.themeName || h.theme)}</div>
+      <div class="h-stats">${stats}</div>
+      <div class="h-date">${dateStr}</div>
+      <div class="h-actions">
+        <button class="btn btn-ghost btn-sm" data-action="history-copy" data-idx="${i}" title="${t('copy')}">📋</button>
+        <button class="btn btn-ghost btn-sm" data-action="history-rejoin" data-code="${h.code}" title="${lang === 'fr' ? 'Rejoindre' : 'Rejoin'}">↗</button>
+        <button class="btn btn-ghost btn-sm" data-action="history-delete" data-idx="${i}" title="${t('deleteNote')}">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="history-section">
+    <h3>${lang === 'fr' ? '📜 Rétros passées' : '📜 Past retros'}</h3>
+    <div class="history-list">${rows}</div>
+  </div>`;
 }
 
 /* ============================= RENDER: JOIN (URL LINK) ============================= */
@@ -1566,6 +1645,7 @@ function render() {
 /* ============================= DRAG & DROP ============================= */
 
 function attachDnd() {
+  // Desktop drag & drop
   document.querySelectorAll('.note[draggable="true"]').forEach(el => {
     el.addEventListener('dragstart', e => {
       el.classList.add('dragging');
@@ -1589,6 +1669,60 @@ function attachDnd() {
         await moveNote(noteId, colId);
       }
     });
+  });
+
+  // Mobile touch drag & drop
+  let touchNote = null;
+  let touchClone = null;
+  let touchOriginCol = null;
+
+  document.querySelectorAll('.note').forEach(el => {
+    el.addEventListener('touchstart', e => {
+      if (e.target.closest('.vote-btn, .icon-btn, .note-menu')) return;
+      const touch = e.touches[0];
+      touchNote = el;
+      touchOriginCol = el.closest('.column-body')?.dataset.colId;
+      // Create floating clone
+      touchClone = el.cloneNode(true);
+      touchClone.style.cssText = `position:fixed;z-index:999;pointer-events:none;opacity:0.85;width:${el.offsetWidth}px;transform:rotate(3deg);`;
+      touchClone.style.left = (touch.clientX - 40) + 'px';
+      touchClone.style.top = (touch.clientY - 20) + 'px';
+      document.body.appendChild(touchClone);
+      el.style.opacity = '0.3';
+    }, { passive: true });
+  });
+
+  document.addEventListener('touchmove', e => {
+    if (!touchClone) return;
+    const touch = e.touches[0];
+    touchClone.style.left = (touch.clientX - 40) + 'px';
+    touchClone.style.top = (touch.clientY - 20) + 'px';
+    // Highlight column under finger
+    document.querySelectorAll('.column-body').forEach(b => b.classList.remove('drag-over'));
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const col = target?.closest('.column-body');
+    if (col) col.classList.add('drag-over');
+  }, { passive: true });
+
+  document.addEventListener('touchend', async e => {
+    if (!touchClone || !touchNote) return;
+    if (touchClone.parentNode) touchClone.parentNode.removeChild(touchClone);
+    touchNote.style.opacity = '';
+    document.querySelectorAll('.column-body').forEach(b => b.classList.remove('drag-over'));
+    // Find column under last touch position
+    const touch = e.changedTouches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const col = target?.closest('.column-body');
+    if (col && col.dataset.colId && touchNote.dataset.noteId) {
+      const noteId = touchNote.dataset.noteId;
+      const colId = col.dataset.colId;
+      if (colId !== touchOriginCol) {
+        await moveNote(noteId, colId);
+      }
+    }
+    touchNote = null;
+    touchClone = null;
+    touchOriginCol = null;
   });
 }
 
@@ -1615,13 +1749,15 @@ document.addEventListener('click', async (e) => {
 
     case 'create-room': {
       const nameInput = document.getElementById('create-name');
+      const pwInput = document.getElementById('create-password');
       const err = document.getElementById('create-error');
       const name = nameInput.value.trim();
+      const pw = pwInput ? pwInput.value.trim() : '';
       if (!name) { err.textContent = t("errName"); return; }
       myName = name;
       btn.disabled = true; btn.textContent = t("creating");
       try {
-        const code = await createRoom(selectedTheme);
+        const code = await createRoom(selectedTheme, pw || null);
         await enterRoom(code);
       } catch (ex) {
         console.error(ex);
@@ -1659,6 +1795,32 @@ document.addEventListener('click', async (e) => {
     }
 
     case 'leave-room': leaveRoom(); break;
+
+    case 'history-copy': {
+      const history = JSON.parse(localStorage.getItem('retrops_history') || '[]');
+      const h = history[parseInt(btn.dataset.idx, 10)];
+      if (h && h.markdown) navigator.clipboard.writeText(h.markdown).then(() => showToast(t('retroCopied')));
+      break;
+    }
+    case 'history-rejoin': {
+      const code = btn.dataset.code;
+      if (code && myName) {
+        await enterRoom(code);
+      } else if (code) {
+        urlCode = code;
+        view = 'join';
+        joinRoomData = await fetchRoom(code);
+        render();
+      }
+      break;
+    }
+    case 'history-delete': {
+      const history = JSON.parse(localStorage.getItem('retrops_history') || '[]');
+      history.splice(parseInt(btn.dataset.idx, 10), 1);
+      localStorage.setItem('retrops_history', JSON.stringify(history));
+      render();
+      break;
+    }
 
     case 'copy-code': {
       const shareUrl = `${window.location.origin}/#${roomCode}`;
