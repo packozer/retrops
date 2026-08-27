@@ -827,7 +827,7 @@ async function enterRoom(code) {
   loading = true; render();
   try {
     const data = await fetchRoom(roomCode);
-    if (!data) { loading = false; render(); showToast("${t("errNotFound")}"); return false; }
+    if (!data) { loading = false; render(); showToast(t("errNotFound")); return false; }
     room = roomToArrays(data);
     view = "board";
     activeTab = "board";
@@ -852,7 +852,7 @@ async function enterRoom(code) {
     return true;
   } catch (e) {
     loading = false; render();
-    showToast("${t("errNetwork")}");
+    showToast(t("errNetwork"));
     return false;
   }
 }
@@ -1617,16 +1617,16 @@ document.addEventListener('click', async (e) => {
       const nameInput = document.getElementById('create-name');
       const err = document.getElementById('create-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "${t("errName")}"; return; }
+      if (!name) { err.textContent = t("errName"); return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "${t("creating")}";
+      btn.disabled = true; btn.textContent = t("creating");
       try {
         const code = await createRoom(selectedTheme);
         await enterRoom(code);
       } catch (ex) {
         console.error(ex);
-        err.textContent = "${t("errCreate")}";
-        btn.disabled = false; btn.textContent = "Créer la salle →";
+        err.textContent = t("errCreate");
+        btn.disabled = false; btn.textContent = t("createBtn");
       }
       break;
     }
@@ -1637,12 +1637,12 @@ document.addEventListener('click', async (e) => {
       const err = document.getElementById('join-error');
       const name = nameInput.value.trim();
       const code = codeInput.value.trim();
-      if (!name) { err.textContent = "${t("errName")}"; return; }
-      if (!code) { err.textContent = "${t("errCode")}"; return; }
+      if (!name) { err.textContent = t("errName"); return; }
+      if (!code) { err.textContent = t("errCode"); return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "${t("connecting")}";
+      btn.disabled = true; btn.textContent = t("connecting");
       const ok = await enterRoom(code);
-      if (!ok) { err.textContent = "${t("errNotFound")}"; btn.disabled = false; btn.textContent = "Rejoindre →"; }
+      if (!ok) { err.textContent = t("errNotFound"); btn.disabled = false; btn.textContent = t("joinBtn"); }
       break;
     }
 
@@ -1650,11 +1650,11 @@ document.addEventListener('click', async (e) => {
       const nameInput = document.getElementById('join-url-name');
       const err = document.getElementById('join-url-error');
       const name = nameInput.value.trim();
-      if (!name) { err.textContent = "${t("errName")}"; return; }
+      if (!name) { err.textContent = t("errName"); return; }
       myName = name;
-      btn.disabled = true; btn.textContent = "${t("connecting")}";
+      btn.disabled = true; btn.textContent = t("connecting");
       const ok = await enterRoom(urlCode);
-      if (!ok) { err.textContent = "${t("errNotFoundShort")}"; btn.disabled = false; btn.textContent = "${t("joinRetroBtn")}"; }
+      if (!ok) { err.textContent = t("errNotFoundShort"); btn.disabled = false; btn.textContent = t("joinRetroBtn"); }
       break;
     }
 
@@ -1662,7 +1662,7 @@ document.addEventListener('click', async (e) => {
 
     case 'copy-code': {
       const shareUrl = `${window.location.origin}/#${roomCode}`;
-      navigator.clipboard.writeText(shareUrl).then(() => showToast("${t("linkCopied")}"));
+      navigator.clipboard.writeText(shareUrl).then(() => showToast(t("linkCopied")));
       break;
     }
 
@@ -1702,7 +1702,7 @@ document.addEventListener('click', async (e) => {
     case 'to-todo': {
       await noteToTodo(btn.dataset.id);
       await refreshRoom();
-      showToast("${t("actionCreated")}");
+      showToast(t("actionCreated"));
       break;
     }
 
@@ -1747,7 +1747,7 @@ document.addEventListener('click', async (e) => {
     }
     case 'copy-export': {
       const ta = document.getElementById('export-text');
-      navigator.clipboard.writeText(ta.value).then(() => showToast("${t("retroCopied")}"));
+      navigator.clipboard.writeText(ta.value).then(() => showToast(t("retroCopied")));
       break;
     }
   }
@@ -1802,7 +1802,7 @@ document.addEventListener('keydown', (e) => {
         view = "join";
         render();
       } else {
-        showToast("${t("errNotFoundShort")}");
+        showToast(t("errNotFoundShort"));
         window.location.hash = '';
         render();
       }
