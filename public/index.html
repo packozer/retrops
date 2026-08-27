@@ -1811,8 +1811,8 @@ document.addEventListener('keydown', (e) => {
       showToast("Erreur réseau.");
       render();
     }
-  } else if (savedRoom && savedName) {
-    // No hash code but saved session — rejoin
+  } else if (savedRoom && savedName && window.location.hash) {
+    // Hash present + saved session — rejoin
     myName = savedName;
     myColor = localStorage.getItem('retrops_color') || "note-1";
     const ok = await enterRoom(savedRoom);
